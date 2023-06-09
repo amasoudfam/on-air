@@ -7,12 +7,19 @@ import (
 )
 
 type Config struct {
-	DBHost     string
-	DBPort     int
-	DBUsername string
-	DBPassword string
+	Database database
+	Server   server
+}
 
-	ServerPort string
+type database struct {
+	Host     string
+	Port     int
+	Username string
+	Password string
+}
+
+type server struct {
+	Port string
 }
 
 var cfg *Config
@@ -26,11 +33,15 @@ func InitConfig() (*Config, error) {
 	}
 
 	cfg := &Config{
-		DBHost:     viper.GetString("database.host"),
-		DBPort:     viper.GetInt("database.port"),
-		DBUsername: viper.GetString("database.username"),
-		DBPassword: viper.GetString("database.password"),
-		ServerPort: viper.GetString("server.port"),
+		Database: database{
+			Host:     viper.GetString("database.host"),
+			Port:     viper.GetInt("database.port"),
+			Username: viper.GetString("database.username"),
+			Password: viper.GetString("database.password"),
+		},
+		Server: server{
+			Port: viper.GetString("server.port"),
+		},
 	}
 
 	return cfg, nil

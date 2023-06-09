@@ -26,7 +26,7 @@ var serveCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(serveCmd)
 	cfg, _ := config.InitConfig()
-	serveCmd.Flags().String("port", cfg.ServerPort, "Port number")
+	serveCmd.Flags().String("port", cfg.Server.Port, "Port number")
 	_ = viper.BindPFlag("port", serveCmd.Flags().Lookup("port"))
 }
 
