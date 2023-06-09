@@ -48,7 +48,7 @@ hotfix: These branches are used to quickly fix issues in the production code. Th
 #### Clone Project
 
 ```bash
-git clone https://git.bimer.ir/new-bimer/backend/Backend.git
+git clone https://github.com/amasoudfam/on-air.git
 ```
 
 ### Status
