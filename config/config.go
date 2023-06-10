@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 
+	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
 
@@ -22,17 +23,21 @@ type server struct {
 	Port string
 }
 
-var cfg *Config
+var Cfg Config
 
-func InitConfig() (*Config, error) {
-	viper.SetConfigFile("config.yaml")
+func InitConfig() error {
+
+	configFile := pflag.String("config", "config.yaml", "Path to config file")
+	pflag.Parse()
+
+	viper.SetConfigFile(*configFile)
 
 	err := viper.ReadInConfig()
 	if err != nil {
-		return nil, fmt.Errorf("failed to read config file: %s", err)
+		return fmt.Errorf("failed to read config file: %s", err)
 	}
 
-	cfg := &Config{
+	Cfg = Config{
 		Database: database{
 			Host:     viper.GetString("database.host"),
 			Port:     viper.GetInt("database.port"),
@@ -44,9 +49,5 @@ func InitConfig() (*Config, error) {
 		},
 	}
 
-	return cfg, nil
-}
-
-func GetConfig() *Config {
-	return cfg
+	return nil
 }
