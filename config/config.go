@@ -24,12 +24,12 @@ type server struct {
 
 var cfg *Config
 
-func InitConfig(configPath string) (*Config, error) {
+func InitConfig(configPath string) error {
 	viper.SetConfigFile(configPath)
 
 	err := viper.ReadInConfig()
 	if err != nil {
-		return nil, fmt.Errorf("failed to read config file: %s", err)
+		return fmt.Errorf("failed to read config file: %s", err)
 	}
 
 	cfg = &Config{
@@ -44,7 +44,7 @@ func InitConfig(configPath string) (*Config, error) {
 		},
 	}
 
-	return cfg, nil
+	return nil
 }
 
 func GetConfig() *Config {

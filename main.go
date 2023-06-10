@@ -14,7 +14,7 @@ func main() {
 	configFile := pflag.String("config", "config.yaml", "Path to config file")
 	pflag.Parse()
 
-	_, err := config.InitConfig(*configFile)
+	err := config.InitConfig(*configFile)
 	if err != nil {
 		panic(err)
 	}
