@@ -6,10 +6,15 @@ package main
 import (
 	"on-air/cmd"
 	"on-air/config"
+
+	"github.com/spf13/pflag"
 )
 
 func main() {
-	_, err := config.InitConfig()
+	configFile := pflag.String("config", "config.yaml", "Path to config file")
+	pflag.Parse()
+
+	_, err := config.InitConfig(*configFile)
 	if err != nil {
 		panic(err)
 	}

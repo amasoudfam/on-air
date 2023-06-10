@@ -3,7 +3,6 @@ package config
 import (
 	"fmt"
 
-	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
 
@@ -25,12 +24,8 @@ type server struct {
 
 var cfg *Config
 
-func InitConfig() (*Config, error) {
-
-	configFile := pflag.String("config", "config.yaml", "Path to config file")
-	pflag.Parse()
-
-	viper.SetConfigFile(*configFile)
+func InitConfig(configPath string) (*Config, error) {
+	viper.SetConfigFile(configPath)
 
 	err := viper.ReadInConfig()
 	if err != nil {
