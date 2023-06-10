@@ -23,9 +23,9 @@ type server struct {
 	Port string
 }
 
-var Cfg Config
+var cfg *Config
 
-func InitConfig() error {
+func InitConfig() (*Config, error) {
 
 	configFile := pflag.String("config", "config.yaml", "Path to config file")
 	pflag.Parse()
@@ -34,10 +34,10 @@ func InitConfig() error {
 
 	err := viper.ReadInConfig()
 	if err != nil {
-		return fmt.Errorf("failed to read config file: %s", err)
+		return nil, fmt.Errorf("failed to read config file: %s", err)
 	}
 
-	Cfg = Config{
+	cfg = &Config{
 		Database: database{
 			Host:     viper.GetString("database.host"),
 			Port:     viper.GetInt("database.port"),
@@ -49,5 +49,9 @@ func InitConfig() error {
 		},
 	}
 
-	return nil
+	return cfg, nil
+}
+
+func GetConfig() *Config {
+	return cfg
 }

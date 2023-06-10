@@ -25,6 +25,7 @@ var serveCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(serveCmd)
+
 	serveCmd.Flags().String("port", "", "Port number")
 	_ = viper.BindPFlag("port", serveCmd.Flags().Lookup("port"))
 }
@@ -37,8 +38,9 @@ func startServer(port string) {
 		return c.String(http.StatusOK, "Hello, World!")
 	})
 
+	cfg := config.GetConfig()
 	if port == "" {
-		port = config.Cfg.Server.Port
+		port = cfg.Server.Port
 	}
 	address := fmt.Sprintf(":%s", port)
 	// start the server

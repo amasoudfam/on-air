@@ -9,12 +9,12 @@ import (
 )
 
 func main() {
-	err := config.InitConfig()
+	_, err := config.InitConfig()
 	if err != nil {
 		panic(err)
 	}
 
 	// Use the configuration values
-	// fmt.Printf("Database host: %s\n", config.Cfg.Database.Host)
+	// fmt.Printf("Database host: %s\n", cfg.Database.Host)
 	cmd.Execute()
 }
