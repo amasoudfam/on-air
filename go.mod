@@ -1,4 +1,4 @@
-module main
+module on-air
 
 go 1.20
 

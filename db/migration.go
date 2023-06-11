@@ -1,8 +1,11 @@
-package main
+package db
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
+
+	"on-air/config"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
@@ -10,8 +13,15 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func main() {
-	db, err := sql.Open("postgres", "postgresql://myuser:mypass@localhost/test")
+func getMigrateObject() *migrate.Migrate {
+	conf := config.GetConfig()
+	connString := fmt.Sprintf("postgresql://%s:%s@%s:%d/%s",
+		conf.Database.Username,
+		conf.Database.Password,
+		conf.Database.Host,
+		conf.Database.Port,
+		conf.Database.DbName)
+	db, err := sql.Open("postgres", connString)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -20,10 +30,18 @@ func main() {
 		log.Fatal(err)
 	}
 	m, err := migrate.NewWithDatabaseInstance(
-		"file://migrations",
+		"file://db/migrations",
 		"postgres", driver)
 	if err != nil {
 		log.Fatal(err)
 	}
-	m.Up()
+	return m
+}
+
+func Up() {
+	getMigrateObject().Up()
+}
+
+func Down() {
+	getMigrateObject().Down()
 }
