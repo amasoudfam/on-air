@@ -7,46 +7,38 @@ import (
 )
 
 type Config struct {
-	Database database
-	Server   server
+	Database Database
+	Server   Server
 }
 
-type database struct {
+type Database struct {
 	Host     string
 	Port     int
 	Username string
 	Password string
 }
 
-type server struct {
+type Server struct {
 	Port string
 }
 
-var cfg *Config
-
-func InitConfig(configPath string) error {
+func InitConfig(configPath string) (*Config, error) {
 	viper.SetConfigFile(configPath)
 
 	err := viper.ReadInConfig()
 	if err != nil {
-		return fmt.Errorf("failed to read config file: %s", err)
+		return nil, fmt.Errorf("failed to read config file: %s", err)
 	}
 
-	cfg = &Config{
-		Database: database{
+	return &Config{
+		Database: Database{
 			Host:     viper.GetString("database.host"),
 			Port:     viper.GetInt("database.port"),
 			Username: viper.GetString("database.username"),
 			Password: viper.GetString("database.password"),
 		},
-		Server: server{
+		Server: Server{
 			Port: viper.GetString("server.port"),
 		},
-	}
-
-	return nil
-}
-
-func GetConfig() *Config {
-	return cfg
+	}, nil
 }

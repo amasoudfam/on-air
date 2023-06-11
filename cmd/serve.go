@@ -19,7 +19,8 @@ var serveCmd = &cobra.Command{
 	Long:  "this command serve the project",
 	Run: func(cmd *cobra.Command, args []string) {
 		port, _ := cmd.Flags().GetString("port")
-		startServer(port)
+		configPath, _ := cmd.Flags().GetString("config")
+		startServer(port, configPath)
 	},
 }
 
@@ -27,22 +28,27 @@ func init() {
 	rootCmd.AddCommand(serveCmd)
 
 	serveCmd.Flags().String("port", "", "Port number")
+	serveCmd.Flags().String("config", "config.yaml", "config path")
 	_ = viper.BindPFlag("port", serveCmd.Flags().Lookup("port"))
+	_ = viper.BindPFlag("config", serveCmd.Flags().Lookup("config"))
 }
 
-func startServer(port string) {
+func startServer(port string, configPath string) {
+	cfg, err := config.InitConfig(configPath)
+	if err != nil {
+		panic(err)
+	}
+
 	e := echo.New()
 
-	// Define your routes and handlers here
 	e.GET("/", func(c echo.Context) error {
 		return c.String(http.StatusOK, "Hello, World!")
 	})
 
-	cfg := config.GetConfig()
 	if port == "" {
 		port = cfg.Server.Port
 	}
+
 	address := fmt.Sprintf(":%s", port)
-	// start the server
 	e.Start(address)
 }
