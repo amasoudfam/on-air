@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"on-air/config"
-	"on-air/db"
-	"on-air/middleware"
 
 	"github.com/labstack/echo/v4"
 	"github.com/spf13/cobra"
@@ -41,12 +39,13 @@ func startServer(port string) {
 	}
 
 	// Get db instance
-	db := db.DbManager()
+	db := config.InitDb(cfg)
 
-	// Inject db by middleware
-	e.Use(middleware.DbMiddleware(db))
+	store := &config.Store{
+		DB: db,
+	}
 
-	address := fmt.Sprintf(":%s", port)
+	address := fmt.Sprintf(":%s", port, store)
 	// Define your routes and handlers here
 	e.GET("/", func(c echo.Context) error {
 		return c.String(http.StatusOK, "Hello, World!")
