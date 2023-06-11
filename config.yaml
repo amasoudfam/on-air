@@ -1,7 +1,8 @@
 database:
   host: localhost
-  port: 3306
-  username: myuser
-  password: mypassword
+  port: 5432
+  username: postgres
+  password: postgres
+  dbname: on-air
 server:
   port: "3000"

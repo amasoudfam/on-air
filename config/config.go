@@ -16,6 +16,7 @@ type database struct {
 	Port     int
 	Username string
 	Password string
+	DbName   string
 }
 
 type server struct {
@@ -38,6 +39,7 @@ func InitConfig(configPath string) error {
 			Port:     viper.GetInt("database.port"),
 			Username: viper.GetString("database.username"),
 			Password: viper.GetString("database.password"),
+			DbName:   viper.GetString("database.dbname"),
 		},
 		Server: server{
 			Port: viper.GetString("server.port"),
