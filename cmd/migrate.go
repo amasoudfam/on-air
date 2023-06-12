@@ -1,24 +1,47 @@
-/*
-Copyright © 2023 NAME HERE <EMAIL ADDRESS>
-*/
 package cmd
 
 import (
+	"database/sql"
 	"fmt"
+	"log"
 
-	"github.com/spf13/cobra"
+	"on-air/config"
+
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
+	_ "github.com/lib/pq"
 )
 
-// migrateCmd represents the migrate command
-var migrateCmd = &cobra.Command{
-	Use:   "migrate",
-	Short: "migrate your database",
-	Long:  `this command migrate all of your migration files`,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("migrate called")
-	},
-}
+func ExecuteMigrate(configPath string, isUpgrade bool) {
+	conf, err := config.InitConfig(configPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	connString := fmt.Sprintf("postgresql://%s:%s@%s:%d/%s",
+		conf.Database.Username,
+		conf.Database.Password,
+		conf.Database.Host,
+		conf.Database.Port,
+		conf.Database.Name)
+	db, err := sql.Open("postgres", connString)
+	if err != nil {
+		log.Fatal(err)
+	}
+	driver, err := postgres.WithInstance(db, &postgres.Config{})
+	if err != nil {
+		log.Fatal(err)
+	}
+	mig, err := migrate.NewWithDatabaseInstance(
+		"file://migrations",
+		"postgres", driver)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if isUpgrade {
+		mig.Up()
+	} else {
+		mig.Down()
 
-func init() {
-	rootCmd.AddCommand(migrateCmd)
+	}
 }
