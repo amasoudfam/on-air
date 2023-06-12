@@ -9,6 +9,7 @@ import (
 type Config struct {
 	Database Database
 	Server   Server
+	Redis    Redis
 }
 
 type Database struct {
@@ -16,6 +17,13 @@ type Database struct {
 	Port     int
 	Username string
 	Password string
+	Name     string
+}
+type Redis struct {
+	Host     string
+	Port     int
+	Password string
+	DB       int
 }
 
 type Server struct {
@@ -36,6 +44,12 @@ func InitConfig(configPath string) (*Config, error) {
 			Port:     viper.GetInt("database.port"),
 			Username: viper.GetString("database.username"),
 			Password: viper.GetString("database.password"),
+		},
+		Redis: Redis{
+			Host:     viper.GetString("redis.host"),
+			Port:     viper.GetInt("redis.port"),
+			Password: viper.GetString("redis.password"),
+			DB:       viper.GetInt("redis.db"),
 		},
 		Server: Server{
 			Port: viper.GetString("server.port"),
