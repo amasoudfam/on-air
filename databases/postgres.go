@@ -10,13 +10,12 @@ import (
 )
 
 func InitPostgres(cfg *config.Config) *gorm.DB {
-
 	conn := fmt.Sprintf(
 		"host=%s user=%s password=%s dbname=%s port=%d sslmode=disable",
 		cfg.Database.Host,
 		cfg.Database.Username,
 		cfg.Database.Password,
-		cfg.Database.Name,
+		cfg.Database.DB,
 		cfg.Database.Port,
 	)
 
@@ -25,5 +24,6 @@ func InitPostgres(cfg *config.Config) *gorm.DB {
 		log.Fatal(err)
 		return nil
 	}
+
 	return db
 }

@@ -10,7 +10,6 @@ import (
 )
 
 func InitRedis(cfg *config.Config) *redis.Client {
-
 	address := fmt.Sprintf("%s:%d", cfg.Redis.Host, cfg.Redis.Port)
 	client := redis.NewClient(&redis.Options{
 		Addr:     address,
@@ -23,6 +22,6 @@ func InitRedis(cfg *config.Config) *redis.Client {
 		log.Fatal(err)
 		return nil
 	}
-	return client
 
+	return client
 }

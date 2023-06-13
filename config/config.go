@@ -17,7 +17,7 @@ type Database struct {
 	Port     int
 	Username string
 	Password string
-	Name     string
+	DB       string
 }
 type Redis struct {
 	Host     string
@@ -44,6 +44,7 @@ func InitConfig(configPath string) (*Config, error) {
 			Port:     viper.GetInt("database.port"),
 			Username: viper.GetString("database.username"),
 			Password: viper.GetString("database.password"),
+			DB:       viper.GetString("database.db"),
 		},
 		Redis: Redis{
 			Host:     viper.GetString("redis.host"),
