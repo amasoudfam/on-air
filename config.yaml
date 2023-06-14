@@ -1,6 +1,6 @@
 database:
   host: localhost
-  port: 3306
+  port: 5432
   username: myuser
   password: mypassword
   db: on-air
