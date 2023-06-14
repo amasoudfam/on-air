@@ -33,23 +33,23 @@ in this approach all branch will merge to dev and after test will be merge to ma
 
 #### Branches
 
-master: This branch represents the production-ready code. It should only contain code that has been thoroughly tested and is ready to be deployed to production.
+  master: This branch represents the production-ready code. It should only contain code that has been thoroughly tested and is ready to be deployed to production.
 
-develop: This branch is used to develop new features. It should contain the latest development changes and should be the base branch for all feature branches.
+  develop: This branch is used to develop new features. It should contain the latest development changes and should be the base branch for all feature branches.
 
 In addition to these two main branches, Git Flow defines three types of supporting branches
 
-feature: These branches are used to develop new features. They are based on develop and are merged back into develop once the feature is complete.
+  feature: These branches are used to develop new features. They are based on develop and are merged back into develop once the feature is complete.
 
-release: These branches are used to prepare the code for a new production release. They are based on develop and are merged back into both develop and master once the release is complete.
+  release: These branches are used to prepare the code for a new production release. They are based on develop and are merged back into both develop and master once the release is complete.
 
-hotfix: These branches are used to quickly fix issues in the production code. They are based on master and are merged back into both develop and master.
+  hotfix: These branches are used to quickly fix issues in the production code. They are based on master and are merged back into both develop and master.
 
 ####  Branch naming
 
-You can name a branch in Git using the command git branch <branch-name>, where <branch-name> is the name you want to give to the branch. For example, to create a new branch called "feature/add-login-page", you can run the following command:
+You can name a branch in Git using the command git branch <branch-name>, where <branch-name> is the name you want to give to the branch. For example, to create a new branch called "feature/add_login_page", you can run the following command:
 
-git branch feature/add_login_page
+  git branch feature/add_login_page
 
 This will create a new branch with the name feature/add-login-page based on the current branch you are on.
 
@@ -69,11 +69,11 @@ Optionally, the commit message can also include a longer description that provid
 
 For example, a conventional commit message for a bug fix in the authentication module of an application might look like this:
 
-fix(auth): Validate user input before authentication
+  fix(auth): Validate user input before authentication
 
-This commit fixes a bug where the authentication module could accept invalid user input, leading to security vulnerabilities. The fix adds input validation checks to the authentication process to ensure that only valid user input is processed.
+  This commit fixes a bug where the authentication module could accept invalid user input, leading to security vulnerabilities. The fix adds input validation checks to the authentication process to ensure that only valid user input is processed.
 
-Closes #123
+  Closes #123
 
 By using a conventional commit message format, developers can more easily understand the nature and purpose of changes made to code in a repository, which can help improve collaboration, code quality, and maintenance of the codebase over time.
 
