@@ -3,6 +3,6 @@ database:
   port: 5432
   username: myuser
   password: mypass
-  name: test
+  db: test
 server:
   port: 2000
