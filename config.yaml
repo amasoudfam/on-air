@@ -1,7 +1,13 @@
 database:
   host: localhost
-  port: 3306
+  port: 5432
   username: myuser
   password: mypassword
+  db: on-air
+redis:
+  host: localhost
+  port: 6379
+  password: redis
+  db: 1
 server:
   port: 2000
