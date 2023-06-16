@@ -12,9 +12,9 @@ type Ticket struct {
 	UnitPrice  int
 	Count      int
 	FlightID   int
-	Status     string
+	Status     string `gorm:"type:varchar(10)"`
 	CreatedAt  time.Time
-	User       User
-	Flight     Flight
+	User       User        `gorm:"foreignkey:UserID"`
+	Flight     Flight      `gorm:"foreignkey:FlightID"`
 	Passengers []Passenger `gorm:"many2many:ticket_passengers;"`
 }

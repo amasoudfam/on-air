@@ -9,7 +9,7 @@ import (
 type Payment struct {
 	gorm.Model
 	Amount   int
-	Status   string
+	Status   string `gorm:type:varchar(20)`
 	TicketID uint
 	PayedAt  time.Time
 	Ticket   Ticket

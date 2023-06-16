@@ -6,11 +6,11 @@ import (
 
 type User struct {
 	gorm.Model
-	FirstName    string
-	LastName     string
-	Email        string `gorm:"unique;"`
-	NationalCode string `gorm:"unique;"`
-	PhoneNumber  string
-	Password     string
-	Tickets      []Ticket
+	FirstName string `gorm:"type:varchar(50)"`
+	LastName  string `gorm:"type:varchar(50)"`
+	Email     string `gorm:"type:varchar(50)"`
+	// NationalCode string `gorm:"type:varchar(50);unique"`
+	PhoneNumber string `gorm:"type:varchar(15)"`
+	Password    string `gorm:"type:varchar(128)"`
+	Tickets     []Ticket
 }

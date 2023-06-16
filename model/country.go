@@ -6,5 +6,5 @@ import (
 
 type Country struct {
 	gorm.Model
-	Name string
+	Name string `gorm:"type:varchar(50)"`
 }
