@@ -4,18 +4,27 @@ CREATE TABLE users (
   last_name varchar(50),
   email varchar(50),
   password varchar(128),
-  phone_number varchar(15)
+  phone_number varchar(15),
+  created_at timestamp with time zone,
+  updated_at timestamp with time zone,
+  deleted_at timestamp with time zone
 );
 
 CREATE TABLE countries (
   id int PRIMARY KEY,
-  name varchar(50)
+  name varchar(50),
+  created_at timestamp with time zone,
+  updated_at timestamp with time zone,
+  deleted_at timestamp with time zone
 );
 
 CREATE TABLE cities (
   id int PRIMARY KEY,
   name varchar(50),
-  country_id int
+  country_id int,
+  created_at timestamp with time zone,
+  updated_at timestamp with time zone,
+  deleted_at timestamp with time zone
 );
 ALTER TABLE cities ADD FOREIGN KEY (country_id) REFERENCES countries (id);
 
@@ -27,7 +36,10 @@ CREATE TABLE flights (
   airplane varchar(50),
   airline varchar(50),
   started_at date,
-  ended_at date
+  ended_at date,
+  created_at timestamp with time zone,
+  updated_at timestamp with time zone,
+  deleted_at timestamp with time zone
 );
 ALTER TABLE flights ADD FOREIGN KEY (from_city) REFERENCES cities (id);
 ALTER TABLE flights ADD FOREIGN KEY (to_city) REFERENCES cities (id);
@@ -38,9 +50,12 @@ CREATE TABLE tickets (
   unit_price int,
   count int,
   flight_id int,
-  created_at date,
-  status varchar(10)
+  status varchar(10),
+  created_at timestamp with time zone,
+  updated_at timestamp with time zone,
+  deleted_at timestamp with time zone
 );
+
 ALTER TABLE tickets ADD FOREIGN KEY (user_id) REFERENCES users (id);
 ALTER TABLE tickets ADD FOREIGN KEY (flight_id) REFERENCES flights (id);
 
@@ -50,7 +65,10 @@ CREATE TABLE passengers (
   first_name varchar(50),
   last_name varchar(50),
   gender varchar(5),
-  user_id int
+  user_id int,
+  created_at timestamp with time zone,
+  updated_at timestamp with time zone,
+  deleted_at timestamp with time zone
 );
 ALTER TABLE passengers ADD FOREIGN KEY (user_id) REFERENCES users (id);
 
@@ -66,6 +84,9 @@ CREATE TABLE payments (
   amount int,
   status varchar(20),
   payed_at date,
-  ticket_id int
+  ticket_id int,
+  created_at timestamp with time zone,
+  updated_at timestamp with time zone,
+  deleted_at timestamp with time zone
 );
 ALTER TABLE payments ADD FOREIGN KEY (ticket_id) REFERENCES tickets (id);

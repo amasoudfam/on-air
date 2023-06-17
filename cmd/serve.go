@@ -10,7 +10,6 @@ import (
 	"on-air/databases"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 var serveCmd = &cobra.Command{
@@ -19,18 +18,13 @@ var serveCmd = &cobra.Command{
 	Long:  "this command serve the project",
 	Run: func(cmd *cobra.Command, args []string) {
 		port, _ := cmd.Flags().GetString("port")
-		configPath, _ := cmd.Flags().GetString("config")
-		startServer(port, configPath)
+		startServer(port, configFlag)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(serveCmd)
-
 	serveCmd.Flags().String("port", "", "Port number")
-	serveCmd.Flags().String("config", "config.yaml", "config path")
-	_ = viper.BindPFlag("port", serveCmd.Flags().Lookup("port"))
-	_ = viper.BindPFlag("config", serveCmd.Flags().Lookup("config"))
 }
 
 func startServer(port string, configPath string) {
