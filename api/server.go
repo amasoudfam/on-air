@@ -28,7 +28,6 @@ func (cv *CustomValidator) Validate(i interface{}) error {
 }
 
 func NewServer(cfg *config.Config, db *gorm.DB) (*Server, error) {
-
 	server := &Server{
 		cfg: cfg,
 		db:  db,
@@ -41,11 +40,8 @@ func NewServer(cfg *config.Config, db *gorm.DB) (*Server, error) {
 func (server *Server) setupRouter() {
 	router := echo.New()
 	router.Validator = &CustomValidator{validator: validator.New()}
-	router.POST("/login", server.GetAuthToken)
-
-	// authRoutes := router.Group("/").Use(authMiddleware(server.tokenMaker))
-
-	// authRoutes.POST("/accounts", server.createAccount)
+	router.POST("/auth/login", server.GetAuthToken)
+	router.POST("/auth/register", server.RegisterUser)
 
 	server.router = router
 }

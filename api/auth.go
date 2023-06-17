@@ -10,10 +10,9 @@ import (
 )
 
 func (server *Server) GetAuthToken(ctx echo.Context) error {
-
 	user := new(schemas.LoginUserRequest)
 	if err := ctx.Bind(user); err != nil {
-		return ctx.JSON(http.StatusBadRequest, "asdasda")
+		return ctx.JSON(http.StatusBadRequest, "")
 	}
 	if err := ctx.Validate(user); err != nil {
 		return ctx.JSON(http.StatusBadRequest, err.Error())
@@ -34,4 +33,24 @@ func (server *Server) GetAuthToken(ctx echo.Context) error {
 		TokenType:   dbUser.Email,
 	}
 	return ctx.JSON(http.StatusOK, response)
+}
+
+func (server *Server) RegisterUser(ctx echo.Context) error {
+	user := new(schemas.RegisterUserRequest)
+	if err := ctx.Bind(user); err != nil {
+		return ctx.JSON(http.StatusBadRequest, "")
+	}
+	if err := ctx.Validate(user); err != nil {
+		return ctx.JSON(http.StatusBadRequest, err.Error())
+	}
+	dbUser, _ := services.GetUserByEmail(server.db, user.Email)
+	if dbUser != nil {
+		return ctx.JSON(http.StatusBadRequest, "User exist")
+	}
+	_, err := services.RegisterUser(server.db, user.Email, user.Password)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, err.Error())
+	}
+
+	return ctx.JSON(http.StatusOK, nil)
 }
