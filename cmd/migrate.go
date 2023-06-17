@@ -3,8 +3,9 @@ package cmd
 import (
 	"database/sql"
 	"fmt"
-	"github.com/spf13/cobra"
 	"log"
+
+	"github.com/spf13/cobra"
 
 	"on-air/config"
 
@@ -12,7 +13,6 @@ import (
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/lib/pq"
-	"github.com/spf13/viper"
 )
 
 // migrateCmd represents the migrate command
@@ -23,9 +23,9 @@ var migrateCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		state, _ := cmd.Flags().GetString("state")
 		if state == "up" {
-			migrateDB(true)
+			migrateDB(true, configFlag)
 		} else if state == "down" {
-			migrateDB(false)
+			migrateDB(false, configFlag)
 		} else {
 			log.Fatal("Invalid state")
 			return
@@ -35,22 +35,25 @@ var migrateCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(migrateCmd)
-	serveCmd.Flags().String("state", "down", "write the state")
+	migrateCmd.Flags().String("state", "down", "write the state")
 }
 
-func migrateDB(isUpgrade bool) {
-	conf, err := config.InitConfig(viper.ConfigFileUsed())
+func migrateDB(isUpgrade bool, configPath string) {
+	conf, err := config.InitConfig(configPath)
 	if err != nil {
 		log.Fatal(err)
 		return
 	}
 
-	connString := fmt.Sprintf("postgresql://%s:%s@%s:%d/%s",
+	connString := fmt.Sprintf(
+		"host=%s user=%s password=%s dbname=%s port=%d sslmode=disable",
+		conf.Database.Host,
 		conf.Database.Username,
 		conf.Database.Password,
-		conf.Database.Host,
+		conf.Database.DB,
 		conf.Database.Port,
-		conf.Database.DB)
+	)
+
 	db, err := sql.Open("postgres", connString)
 	if err != nil {
 		log.Fatal(err)

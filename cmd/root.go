@@ -18,6 +18,14 @@ var rootCmd = &cobra.Command{
 	},
 }
 
+var (
+	configFlag string
+)
+
+func init() {
+	rootCmd.PersistentFlags().StringVar(&configFlag, "config", "config.yaml", "config path")
+}
+
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
