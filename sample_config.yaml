@@ -1,8 +1,8 @@
 database:
   host: localhost
   port: 5432
-  username: postgres
-  password: postgres
+  username: myuser
+  password: mypassword
   db: on-air
 redis:
   host: localhost

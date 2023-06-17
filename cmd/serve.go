@@ -5,10 +5,10 @@ package cmd
 
 import (
 	"fmt"
-	"net/http"
+	"on-air/api"
 	"on-air/config"
+	"on-air/databases"
 
-	"github.com/labstack/echo/v4"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -39,16 +39,14 @@ func startServer(port string, configPath string) {
 		panic(err)
 	}
 
-	e := echo.New()
-
-	e.GET("/", func(c echo.Context) error {
-		return c.String(http.StatusOK, "Hello, World!")
-	})
+	db := databases.InitPostgres(cfg)
+	server, err := api.NewServer(cfg, db)
 
 	if port == "" {
 		port = cfg.Server.Port
 	}
 
 	address := fmt.Sprintf(":%s", port)
-	e.Start(address)
+	server.Start(address)
+
 }

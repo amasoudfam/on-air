@@ -10,6 +10,7 @@ type Config struct {
 	Database Database
 	Server   Server
 	Redis    Redis
+	Auth     Auth
 }
 
 type Database struct {
@@ -28,6 +29,11 @@ type Redis struct {
 
 type Server struct {
 	Port string
+}
+
+type Auth struct {
+	SecretKey string
+	LifeTime  int
 }
 
 func InitConfig(configPath string) (*Config, error) {
@@ -54,6 +60,10 @@ func InitConfig(configPath string) (*Config, error) {
 		},
 		Server: Server{
 			Port: viper.GetString("server.port"),
+		},
+		Auth: Auth{
+			SecretKey: viper.GetString("auth.secret_key"),
+			LifeTime:  viper.GetInt("auth.lifetime"),
 		},
 	}, nil
 }

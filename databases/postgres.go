@@ -18,6 +18,7 @@ func InitPostgres(cfg *config.Config) *gorm.DB {
 		cfg.Database.DB,
 		cfg.Database.Port,
 	)
+	fmt.Println(conn)
 
 	db, err := gorm.Open(postgres.Open(conn), &gorm.Config{})
 	if err != nil {
