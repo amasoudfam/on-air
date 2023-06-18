@@ -15,7 +15,7 @@ const Bearer = "Bearer"
 
 type Auth struct {
 	DB  *gorm.DB
-	JWT *config.Auth
+	JWT *config.JWT
 }
 
 type LoginRequest struct {

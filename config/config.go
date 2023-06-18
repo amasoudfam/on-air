@@ -11,7 +11,7 @@ type Config struct {
 	Database Database
 	Server   Server
 	Redis    Redis
-	Auth     Auth
+	JWT      JWT
 }
 
 type Database struct {
@@ -32,7 +32,7 @@ type Server struct {
 	Port string
 }
 
-type Auth struct {
+type JWT struct {
 	SecretKey string
 	// TODO change name  expires_in
 	LifeTime time.Duration
@@ -63,7 +63,7 @@ func InitConfig(configPath string) (*Config, error) {
 		Server: Server{
 			Port: viper.GetString("server.port"),
 		},
-		Auth: Auth{
+		JWT: JWT{
 			SecretKey: viper.GetString("auth.secret_key"),
 			LifeTime:  viper.GetDuration("auth.lifetime"),
 		},

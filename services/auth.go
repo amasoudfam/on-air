@@ -30,7 +30,7 @@ func (payload *payload) Valid() error {
 	return nil
 }
 
-func CreateToken(cfg *config.Auth, userID int) (string, error) {
+func CreateToken(cfg *config.JWT, userID int) (string, error) {
 	payload := newPayload(userID, time.Duration(cfg.LifeTime))
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, payload)
@@ -45,7 +45,7 @@ func VerifyToken(cfg *config.Config, token string) (*payload, error) {
 		if !ok {
 			return nil, errors.New("")
 		}
-		return []byte(cfg.Auth.SecretKey), nil
+		return []byte(cfg.JWT.SecretKey), nil
 	}
 
 	jwtToken, err := jwt.ParseWithClaims(token, &payload{}, keyFunc)

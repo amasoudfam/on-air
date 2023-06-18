@@ -28,7 +28,7 @@ func SetupServer(cfg *config.Config, db *gorm.DB, redis *redis.Client, port stri
 	e.Validator = &CustomValidator{validator: validator.New()}
 	auth := &handlers.Auth{
 		DB:  db,
-		JWT: &cfg.Auth,
+		JWT: &cfg.JWT,
 	}
 
 	e.POST("/auth/login", auth.Login)
