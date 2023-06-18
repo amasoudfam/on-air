@@ -15,6 +15,7 @@ var rootCmd = &cobra.Command{
 	Long:  "A longer description that spans multiple lines",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Hello, Cobra!")
+		startServer("8000", "config.yaml")
 	},
 }
 

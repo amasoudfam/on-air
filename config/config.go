@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/spf13/viper"
 )
@@ -10,6 +11,7 @@ type Config struct {
 	Database Database
 	Server   Server
 	Redis    Redis
+	JWT      JWT
 }
 
 type Database struct {
@@ -28,6 +30,12 @@ type Redis struct {
 
 type Server struct {
 	Port string
+}
+
+type JWT struct {
+	SecretKey string
+	// TODO change name  expires_in
+	LifeTime time.Duration
 }
 
 func InitConfig(configPath string) (*Config, error) {
@@ -54,6 +62,10 @@ func InitConfig(configPath string) (*Config, error) {
 		},
 		Server: Server{
 			Port: viper.GetString("server.port"),
+		},
+		JWT: JWT{
+			SecretKey: viper.GetString("auth.secret_key"),
+			LifeTime:  viper.GetDuration("auth.lifetime"),
 		},
 	}, nil
 }

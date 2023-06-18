@@ -4,11 +4,11 @@ Copyright © 2023 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"fmt"
-	"net/http"
+	"log"
 	"on-air/config"
+	"on-air/databases"
+	"on-air/server"
 
-	"github.com/labstack/echo/v4"
 	"github.com/spf13/cobra"
 )
 
@@ -33,16 +33,12 @@ func startServer(port string, configPath string) {
 		panic(err)
 	}
 
-	e := echo.New()
-
-	e.GET("/", func(c echo.Context) error {
-		return c.String(http.StatusOK, "Hello, World!")
-	})
+	db := databases.InitPostgres(cfg)
+	redis := databases.InitRedis(cfg)
 
 	if port == "" {
 		port = cfg.Server.Port
 	}
 
-	address := fmt.Sprintf(":%s", port)
-	e.Start(address)
+	log.Fatal(server.SetupServer(cfg, db, redis, port))
 }

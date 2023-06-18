@@ -1,5 +1,5 @@
 CREATE TABLE users (
-  id int PRIMARY KEY,
+  id serial PRIMARY KEY,
   first_name varchar(50),
   last_name varchar(50),
   email varchar(50),
@@ -11,7 +11,7 @@ CREATE TABLE users (
 );
 
 CREATE TABLE countries (
-  id int PRIMARY KEY,
+  id serial PRIMARY KEY,
   name varchar(50),
   created_at timestamp with time zone,
   updated_at timestamp with time zone,
@@ -19,7 +19,7 @@ CREATE TABLE countries (
 );
 
 CREATE TABLE cities (
-  id int PRIMARY KEY,
+  id serial PRIMARY KEY,
   name varchar(50),
   country_id int,
   created_at timestamp with time zone,
@@ -29,7 +29,7 @@ CREATE TABLE cities (
 ALTER TABLE cities ADD FOREIGN KEY (country_id) REFERENCES countries (id);
 
 CREATE TABLE flights (
-  id int PRIMARY KEY,
+  id serial PRIMARY KEY,
   number varchar(20),
   from_city int,
   to_city int,
@@ -45,7 +45,7 @@ ALTER TABLE flights ADD FOREIGN KEY (from_city) REFERENCES cities (id);
 ALTER TABLE flights ADD FOREIGN KEY (to_city) REFERENCES cities (id);
 
 CREATE TABLE tickets (
-  id int PRIMARY KEY,
+  id serial PRIMARY KEY,
   user_id int,
   unit_price int,
   count int,
@@ -60,7 +60,7 @@ ALTER TABLE tickets ADD FOREIGN KEY (user_id) REFERENCES users (id);
 ALTER TABLE tickets ADD FOREIGN KEY (flight_id) REFERENCES flights (id);
 
 CREATE TABLE passengers (
-  id int PRIMARY KEY,
+  id serial PRIMARY KEY,
   national_code varchar(10),
   first_name varchar(50),
   last_name varchar(50),
@@ -80,7 +80,7 @@ ALTER TABLE ticket_passengers ADD FOREIGN KEY (ticket_id) REFERENCES tickets (id
 ALTER TABLE ticket_passengers ADD FOREIGN KEY (passenger_id) REFERENCES passengers (id);
 
 CREATE TABLE payments (
-  id int PRIMARY KEY,
+  id serial PRIMARY KEY,
   amount int,
   status varchar(20),
   payed_at date,
