@@ -3,8 +3,7 @@ package handlers
 import (
 	"net/http"
 	"on-air/config"
-	"on-air/models"
-	"on-air/services"
+	"on-air/repository"
 	"on-air/utils"
 
 	"github.com/labstack/echo/v4"
@@ -40,7 +39,7 @@ func (a *Auth) Login(ctx echo.Context) error {
 
 	// TODO repository
 	// TODO error package
-	dbUser, err := models.GetUserByEmail(a.DB, req.Email)
+	dbUser, err := repository.GetUserByEmail(a.DB, req.Email)
 	if err != nil {
 		return ctx.JSON(http.StatusUnauthorized, "Invalid credentials")
 	}
@@ -50,7 +49,7 @@ func (a *Auth) Login(ctx echo.Context) error {
 		return ctx.JSON(http.StatusUnauthorized, "Invalid credentials")
 	}
 
-	accessToken, err := services.CreateToken(a.JWT, int(dbUser.ID))
+	accessToken, err := repository.CreateToken(a.JWT, int(dbUser.ID))
 	if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, "Internal server error")
 	}
@@ -79,11 +78,11 @@ func (a *Auth) Register(ctx echo.Context) error {
 	if err := ctx.Validate(user); err != nil {
 		return ctx.JSON(http.StatusBadRequest, err.Error())
 	}
-	dbUser, _ := models.GetUserByEmail(a.DB, user.Email)
+	dbUser, _ := repository.GetUserByEmail(a.DB, user.Email)
 	if dbUser != nil {
 		return ctx.JSON(http.StatusBadRequest, "User exist")
 	}
-	_, err := models.RegisterUser(a.DB, user.Email, user.Password)
+	_, err := repository.RegisterUser(a.DB, user.Email, user.Password)
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, err.Error())
 	}
