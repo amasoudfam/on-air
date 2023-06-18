@@ -4,10 +4,10 @@ Copyright © 2023 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"fmt"
-	"on-air/api"
+	"log"
 	"on-air/config"
 	"on-air/databases"
+	"on-air/server"
 
 	"github.com/spf13/cobra"
 )
@@ -34,13 +34,11 @@ func startServer(port string, configPath string) {
 	}
 
 	db := databases.InitPostgres(cfg)
-	server, err := api.NewServer(cfg, db)
+	redis := databases.InitRedis(cfg)
 
 	if port == "" {
 		port = cfg.Server.Port
 	}
 
-	address := fmt.Sprintf(":%s", port)
-	server.Start(address)
-
+	log.Fatal(server.SetupServer(cfg, db, redis, port))
 }

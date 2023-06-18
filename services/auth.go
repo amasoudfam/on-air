@@ -8,42 +8,38 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
-type Payload struct {
+type payload struct {
 	UserID    int       `json:"id"`
 	ExpiredAt time.Time `json:"expired_at"`
 }
 
-type TokenMaker interface {
-	CreateToken(cfg *config.Config, userID int) (string, error)
-
-	VerifyToken(token string) (*Payload, error)
-}
-
-func NewPayload(userID int, duration time.Duration) *Payload {
-	payload := &Payload{
+func newPayload(userID int, duration time.Duration) *payload {
+	payload := &payload{
 		UserID:    userID,
 		ExpiredAt: time.Now().Add(duration),
 	}
+
 	return payload
 }
 
-func (payload *Payload) Valid() error {
+func (payload *payload) Valid() error {
 	if time.Now().After(payload.ExpiredAt) {
-		return errors.New("payload expired")
+		return errors.New("token expired")
 	}
+
 	return nil
 }
 
-func CreateToken(cfg *config.Config, userID int) (string, error) {
-	payload := NewPayload(userID, time.Duration(cfg.Auth.LifeTime*int(time.Minute)))
+func CreateToken(cfg *config.Auth, userID int) (string, error) {
+	payload := newPayload(userID, time.Duration(cfg.LifeTime))
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, payload)
-	return token.SignedString([]byte(cfg.Auth.SecretKey))
+	return token.SignedString([]byte(cfg.SecretKey))
 }
 
 var ErrInvalidToken = errors.New("invalid token")
 
-func VerifyToken(cfg *config.Config, token string) (*Payload, error) {
+func VerifyToken(cfg *config.Config, token string) (*payload, error) {
 	keyFunc := func(token *jwt.Token) (interface{}, error) {
 		_, ok := token.Method.(*jwt.SigningMethodHMAC)
 		if !ok {
@@ -52,13 +48,13 @@ func VerifyToken(cfg *config.Config, token string) (*Payload, error) {
 		return []byte(cfg.Auth.SecretKey), nil
 	}
 
-	jwtToken, err := jwt.ParseWithClaims(token, &Payload{}, keyFunc)
+	jwtToken, err := jwt.ParseWithClaims(token, &payload{}, keyFunc)
 
 	if err != nil {
 		return nil, ErrInvalidToken
 	}
 
-	payload, ok := jwtToken.Claims.(*Payload)
+	payload, ok := jwtToken.Claims.(*payload)
 	if !ok {
 		return nil, ErrInvalidToken
 	}

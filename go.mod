@@ -1,6 +1,6 @@
 module on-air
 
-go 1.20
+go 1.19
 
 require (
 	github.com/go-playground/validator/v10 v10.14.1
@@ -25,7 +25,6 @@ require (
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
-	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
 	golang.org/x/tools v0.10.0 // indirect
 )
 

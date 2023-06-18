@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/spf13/viper"
 )
@@ -33,7 +34,8 @@ type Server struct {
 
 type Auth struct {
 	SecretKey string
-	LifeTime  int
+	// TODO change name  expires_in
+	LifeTime time.Duration
 }
 
 func InitConfig(configPath string) (*Config, error) {
@@ -63,7 +65,7 @@ func InitConfig(configPath string) (*Config, error) {
 		},
 		Auth: Auth{
 			SecretKey: viper.GetString("auth.secret_key"),
-			LifeTime:  viper.GetInt("auth.lifetime"),
+			LifeTime:  viper.GetDuration("auth.lifetime"),
 		},
 	}, nil
 }
