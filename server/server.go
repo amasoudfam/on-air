@@ -34,5 +34,11 @@ func SetupServer(cfg *config.Config, db *gorm.DB, redis *redis.Client, port stri
 	e.POST("/auth/login", auth.Login)
 	e.POST("/auth/register", auth.Register)
 
+	Flight := &handlers.Flight{
+		DB: db,
+	}
+
+	e.GET("/flights", Flight.List)
+
 	return e.Start(fmt.Sprintf(":%s", port))
 }
