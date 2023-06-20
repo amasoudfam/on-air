@@ -14,3 +14,6 @@ server:
 auth:
   secret-key: mysecretkey
   lifetime: 60 m
+services:
+  fights: 
+    url: "http://example.com"

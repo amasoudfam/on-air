@@ -35,7 +35,8 @@ func SetupServer(cfg *config.Config, db *gorm.DB, redis *redis.Client, port stri
 	e.POST("/auth/register", auth.Register)
 
 	Flight := &handlers.Flight{
-		DB: db,
+		DB:            db,
+		FlightService: &cfg.Services.Flights,
 	}
 
 	e.GET("/flights", Flight.List)

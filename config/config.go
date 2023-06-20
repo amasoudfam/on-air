@@ -12,6 +12,7 @@ type Config struct {
 	Server   Server
 	Redis    Redis
 	JWT      JWT
+	Services Services
 }
 
 type Database struct {
@@ -36,6 +37,14 @@ type JWT struct {
 	SecretKey string
 	// TODO change name  expires_in
 	LifeTime time.Duration
+}
+
+type FlightService struct {
+	Url string
+}
+
+type Services struct {
+	Flights FlightService
 }
 
 func InitConfig(configPath string) (*Config, error) {
@@ -66,6 +75,11 @@ func InitConfig(configPath string) (*Config, error) {
 		JWT: JWT{
 			SecretKey: viper.GetString("auth.secret_key"),
 			LifeTime:  viper.GetDuration("auth.lifetime"),
+		},
+		Services: Services{
+			Flights: FlightService{
+				Url: viper.GetString("services.fights.url"),
+			},
 		},
 	}, nil
 }
