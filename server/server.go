@@ -32,12 +32,13 @@ func SetupServer(cfg *config.Config, db *gorm.DB, redis *redis.Client, port stri
 		JWT: &cfg.JWT,
 	}
 
+	e.POST("/auth/login", auth.Login)
+	e.POST("/auth/register", auth.Register)
+
 	passenger := &handlers.Passenger{
 		DB: db,
 	}
 
-	e.POST("/auth/login", auth.Login)
-	e.POST("/auth/register", auth.Register)
 	e.POST("/passenger/add", passenger.PassengerAdd)
 	e.POST("/passenger/list", passenger.PassengerListByUser)
 

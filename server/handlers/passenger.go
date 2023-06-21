@@ -20,17 +20,6 @@ type PassengerAddRequest struct {
 	Gender       string `json:"gender" binding:"required"`
 }
 
-type UserPassengerListRequest struct {
-	UserID int `json:"userid" binding:"required"`
-}
-
-type UserPassengerListResponse struct {
-	NationalCode string `json:"nationalcode" binding:"required"`
-	FirstName    string `json:"firstname" binding:"required"`
-	LastName     string `json:"lastname" binding:"required"`
-	Gender       string `json:"gender" binding:"required"`
-}
-
 func (p *Passenger) PassengerAdd(ctx echo.Context) error {
 	passenger := new(PassengerAddRequest)
 	if err := ctx.Bind(passenger); err != nil {
@@ -54,6 +43,17 @@ func (p *Passenger) PassengerAdd(ctx echo.Context) error {
 	return ctx.JSON(http.StatusCreated, nil)
 }
 
+type UserPassengerListRequest struct {
+	UserID int `json:"userid" binding:"required"`
+}
+
+type UserPassengerListResponse struct {
+	NationalCode string `json:"nationalcode" binding:"required"`
+	FirstName    string `json:"firstname" binding:"required"`
+	LastName     string `json:"lastname" binding:"required"`
+	Gender       string `json:"gender" binding:"required"`
+}
+
 func (p *Passenger) PassengerListByUser(ctx echo.Context) error {
 	req := new(UserPassengerListRequest)
 	if err := ctx.Bind(req); err != nil {
@@ -65,5 +65,13 @@ func (p *Passenger) PassengerListByUser(ctx echo.Context) error {
 	}
 
 	dbPassengers, _ := repository.GetPassengersByUserID(p.DB, req.UserID)
-	return ctx.JSON(http.StatusCreated, dbPassengers)
+	passengers := make([]UserPassengerListResponse, len(*dbPassengers))
+	for i, p := range *dbPassengers {
+		passengers[i].FirstName = p.FirstName
+		passengers[i].LastName = p.LastName
+		passengers[i].NationalCode = p.NationalCode
+		passengers[i].Gender = p.Gender
+	}
+
+	return ctx.JSON(http.StatusCreated, passengers)
 }
