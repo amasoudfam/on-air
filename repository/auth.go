@@ -39,13 +39,13 @@ func CreateToken(cfg *config.JWT, userID int) (string, error) {
 
 var ErrInvalidToken = errors.New("invalid token")
 
-func VerifyToken(cfg *config.Config, token string) (*payload, error) {
+func VerifyToken(JWT *config.JWT, token string) (*payload, error) {
 	keyFunc := func(token *jwt.Token) (interface{}, error) {
 		_, ok := token.Method.(*jwt.SigningMethodHMAC)
 		if !ok {
 			return nil, errors.New("")
 		}
-		return []byte(cfg.JWT.SecretKey), nil
+		return []byte(JWT.SecretKey), nil
 	}
 
 	jwtToken, err := jwt.ParseWithClaims(token, &payload{}, keyFunc)

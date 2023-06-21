@@ -12,6 +12,7 @@ type Config struct {
 	Server   Server
 	Redis    Redis
 	JWT      JWT
+	IPG      IPG
 }
 
 type Database struct {
@@ -36,6 +37,13 @@ type JWT struct {
 	SecretKey string
 	// TODO change name  expires_in
 	LifeTime time.Duration
+}
+
+type IPG struct {
+	MerchantCode int
+	TerminalId   int
+	RedirectUrl  string
+	CertFile     string
 }
 
 func InitConfig(configPath string) (*Config, error) {
@@ -66,6 +74,12 @@ func InitConfig(configPath string) (*Config, error) {
 		JWT: JWT{
 			SecretKey: viper.GetString("auth.secret_key"),
 			LifeTime:  viper.GetDuration("auth.lifetime"),
+		},
+		IPG: IPG{
+			MerchantCode: viper.GetInt("gatepay.merchant_code"),
+			TerminalId:   viper.GetInt("gatepay.terminal_id"),
+			RedirectUrl:  viper.GetString("gatepay.redirect_url"),
+			CertFile:     viper.GetString("gatepay.cert_file"),
 		},
 	}, nil
 }

@@ -14,3 +14,8 @@ server:
 auth:
   secret-key: mysecretkey
   lifetime: 60 m
+gatepay:
+  merchant_code: 788
+  terminal_id: 134754358
+  redirect_url: 
+  cert_file:

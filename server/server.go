@@ -26,6 +26,7 @@ func (cv *CustomValidator) Validate(i interface{}) error {
 func SetupServer(cfg *config.Config, db *gorm.DB, redis *redis.Client, port string) error {
 	e := echo.New()
 	e.Validator = &CustomValidator{validator: validator.New()}
+
 	auth := &handlers.Auth{
 		DB:  db,
 		JWT: &cfg.JWT,
@@ -33,6 +34,22 @@ func SetupServer(cfg *config.Config, db *gorm.DB, redis *redis.Client, port stri
 
 	e.POST("/auth/login", auth.Login)
 	e.POST("/auth/register", auth.Register)
+
+	ticket := &handlers.Ticket{
+		DB:  db,
+		JWT: &cfg.JWT,
+	}
+
+	e.POST("/ticket/reserve", ticket.Reserve)
+
+	payment := &handlers.Payment{
+		DB:  db,
+		JWT: &cfg.JWT,
+		IPG: &cfg.IPG,
+	}
+
+	e.POST("/Payment/reserve", payment.Pay)
+	e.POST("/Payment/callBack", payment.CallBack)
 
 	return e.Start(fmt.Sprintf(":%s", port))
 }

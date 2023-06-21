@@ -99,12 +99,25 @@ Below we describe the conventions or tools specific to golang project.
 ├── .golangci.yml
 ├── README.md
 ├── build
+├── models
+├── server
+│   └── server.go
+│   └── handlers
+├── database
+│   └── postgres.go
+│   └── redis.go
 ├── docs
-│   └── README.md
-├── pkg
-├── release
-│   ├── template-admin.yaml
-│   └── template-controller.yaml
+│   └── Cobra.md
+│   └── Echo.md
+│   └── Golang-Migrate.md
+│   └── Gorm.md
+│   └── Viper.md
+├── cmd
+│   └── migrate.go
+│   └── root.go
+│   └── seed.go
+│   └── serve.go
+├── migrations
 ├── test
 │   ├── README.md
 ├── third_party
