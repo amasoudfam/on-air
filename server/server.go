@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"on-air/config"
 	"on-air/server/handlers"
+	"on-air/server/middlewares"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
@@ -30,6 +31,10 @@ func SetupServer(cfg *config.Config, db *gorm.DB, redis *redis.Client, port stri
 		DB:  db,
 		JWT: &cfg.JWT,
 	}
+	authMiddleware := &middlewares.Auth{
+		JWT: &cfg.JWT,
+	}
+	e.Use(authMiddleware.AuthMiddleware)
 
 	e.POST("/auth/login", auth.Login)
 	e.POST("/auth/register", auth.Register)
