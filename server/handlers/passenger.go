@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"on-air/repository"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
 )
@@ -12,32 +13,39 @@ type Passenger struct {
 	DB *gorm.DB
 }
 
-type PassengerAddRequest struct {
+type CreateRequest struct {
 	NationalCode string `json:"nationalcode" binding:"required"`
 	FirstName    string `json:"firstname" binding:"required"`
 	LastName     string `json:"lastname" binding:"required"`
-	UserID       int    `json:"userid" binding:"required"`
+	UserID       int    `json:"user_id" binding:"required"`
 	Gender       string `json:"gender" binding:"required"`
 }
 
-func (p *Passenger) PassengerAdd(ctx echo.Context) error {
-	passenger := new(PassengerAddRequest)
-	if err := ctx.Bind(passenger); err != nil {
+func (p *Passenger) Create(ctx echo.Context) error {
+	var req CreateRequest
+	if err := ctx.Bind(&req); err != nil {
 		return ctx.JSON(http.StatusBadRequest, "")
 	}
 
-	if err := ctx.Validate(passenger); err != nil {
+	if err := ctx.Validate(&req); err != nil {
 		return ctx.JSON(http.StatusBadRequest, err.Error())
 	}
 
-	dbPassenger, _ := repository.GetPassengerByNationalCodeAndUserID(p.DB, passenger.NationalCode, passenger.UserID)
-	if dbPassenger != nil {
-		return ctx.JSON(http.StatusBadRequest, "Passenger exists for this user")
-	}
+	_, err := repository.CreatePassenger(
+		p.DB,
+		req.UserID,
+		req.NationalCode,
+		req.FirstName,
+		req.LastName,
+		req.Gender,
+	)
 
-	_, err := repository.AddPassenger(p.DB, passenger.UserID, passenger.NationalCode, passenger.FirstName, passenger.LastName, passenger.Gender)
 	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, err.Error())
+		if pgerr, ok := err.(*pgconn.PgError); ok && pgerr.Code == "23505" {
+			return ctx.JSON(http.StatusBadRequest, "Passenger exists")
+		} else {
+			return ctx.JSON(http.StatusBadRequest, "Internal error")
+		}
 	}
 
 	return ctx.JSON(http.StatusCreated, nil)
@@ -54,24 +62,26 @@ type UserPassengerListResponse struct {
 	Gender       string `json:"gender" binding:"required"`
 }
 
-func (p *Passenger) PassengerListByUser(ctx echo.Context) error {
-	req := new(UserPassengerListRequest)
-	if err := ctx.Bind(req); err != nil {
+func (p *Passenger) Get(ctx echo.Context) error {
+	var req UserPassengerListRequest
+	if err := ctx.Bind(&req); err != nil {
 		return ctx.JSON(http.StatusBadRequest, "")
 	}
 
-	if err := ctx.Validate(req); err != nil {
+	if err := ctx.Validate(&req); err != nil {
 		return ctx.JSON(http.StatusBadRequest, err.Error())
 	}
 
-	dbPassengers, _ := repository.GetPassengersByUserID(p.DB, req.UserID)
-	passengers := make([]UserPassengerListResponse, len(*dbPassengers))
-	for i, p := range *dbPassengers {
-		passengers[i].FirstName = p.FirstName
-		passengers[i].LastName = p.LastName
-		passengers[i].NationalCode = p.NationalCode
-		passengers[i].Gender = p.Gender
+	passengers, _ := repository.GetPassengersByUserID(p.DB, req.UserID)
+	response := make([]UserPassengerListResponse, 0, len(*passengers))
+	for _, p := range *passengers {
+		response = append(response, UserPassengerListResponse{
+			FirstName:    p.FirstName,
+			LastName:     p.LastName,
+			NationalCode: p.NationalCode,
+			Gender:       p.Gender,
+		})
 	}
 
-	return ctx.JSON(http.StatusCreated, passengers)
+	return ctx.JSON(http.StatusOK, response)
 }
