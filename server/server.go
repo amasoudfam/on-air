@@ -36,6 +36,7 @@ func SetupServer(cfg *config.Config, db *gorm.DB, redis *redis.Client, port stri
 
 	Flight := &handlers.Flight{
 		DB:            db,
+		Redis:         redis,
 		FlightService: &cfg.Services.Flights,
 	}
 
