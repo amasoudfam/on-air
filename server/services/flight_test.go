@@ -88,7 +88,127 @@ func (suite *FlightServiceTestSuite) TestGetFlightsListFromApi_Success() {
 	assert.NoError(suite.T(), err)
 }
 
-// ... Add more test cases for other functions
+func (suite *FlightServiceTestSuite) TestGetFlightsListFromApi_webService_Failure() {
+	data := []FlightDetails{
+		{
+			Number:  "FL001",
+			Airline: "AirlineA",
+		},
+	}
+
+	jsonData, _ := json.Marshal(data)
+	suite.mockRedis.ExpectSet("redis_key", jsonData, time.Minute*10).SetVal(string(jsonData))
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+
+	expectedURL := "https://api.example.com/flights?org=origin&dest=destination&date=date"
+	httpmock.RegisterResponder("GET", expectedURL, httpmock.NewStringResponder(http.StatusInternalServerError, "Internal Server Error"))
+
+	flightService := &config.FlightService{
+		Url: "https://api2.example.com",
+	}
+
+	flightsList := []FlightDetails{}
+	_, err := GetFlightsListFromApi(suite.redis, flightService, "redis_key", context.TODO(), flightsList, "origin", "destination", "date")
+
+	assert.NotNil(suite.T(), err)
+}
+
+func (suite *FlightServiceTestSuite) TestGetFlightsListFromApi_webService_500_Failure() {
+	data := []FlightDetails{
+		{
+			Number:  "FL001",
+			Airline: "AirlineA",
+		},
+	}
+
+	jsonData, _ := json.Marshal(data)
+	suite.mockRedis.ExpectSet("redis_key", jsonData, time.Minute*10).SetVal(string(jsonData))
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+
+	expectedURL := "https://api.example.com/flights?org=origin&dest=destination&date=date"
+	httpmock.RegisterResponder("GET", expectedURL, httpmock.NewStringResponder(http.StatusInternalServerError, "Internal Server Error"))
+
+	flightService := &config.FlightService{
+		Url: "https://api.example.com",
+	}
+
+	flightsList := []FlightDetails{}
+	_, err := GetFlightsListFromApi(suite.redis, flightService, "redis_key", context.TODO(), flightsList, "origin", "destination", "date")
+
+	assert.EqualError(suite.T(), err, "web service returned an error")
+}
+
+func (suite *FlightServiceTestSuite) TestFilterByAirline() {
+	flights := []FlightDetails{
+		{Number: "FL001", Airline: "AirlineA"},
+		{Number: "FL002", Airline: "AirlineB"},
+		{Number: "FL003", Airline: "AirlineA"},
+		{Number: "FL004", Airline: "AirlineC"},
+	}
+	airline := "AirlineA"
+	filteredFlights := FilterByAirline(flights, airline)
+
+	expectedFlights := []FlightDetails{
+		{Number: "FL001", Airline: "AirlineA"},
+		{Number: "FL003", Airline: "AirlineA"},
+	}
+	assert.Len(suite.T(), filteredFlights, 2)
+	assert.Equal(suite.T(), expectedFlights, filteredFlights)
+}
+
+func (suite *FlightServiceTestSuite) TestFilterByAirplane() {
+	flights := []FlightDetails{
+		{Number: "FL001", Airline: "AirlineA", Airplane: "bb"},
+		{Number: "FL002", Airline: "AirlineB", Airplane: "hh"},
+		{Number: "FL003", Airline: "AirlineA", Airplane: "bb"},
+		{Number: "FL004", Airline: "AirlineC", Airplane: "cc"},
+	}
+	airplane := "hh"
+	filteredFlights := FilterByAirplane(flights, airplane)
+
+	expectedFlights := []FlightDetails{
+		{Number: "FL002", Airline: "AirlineB", Airplane: "hh"},
+	}
+	assert.Len(suite.T(), filteredFlights, 1)
+	assert.Equal(suite.T(), expectedFlights, filteredFlights)
+}
+
+func (suite *FlightServiceTestSuite) TestFilterByCapacity() {
+	flights := []FlightDetails{
+		{Number: "FL001", Airline: "AirlineA", EmptyCapacity: 0},
+		{Number: "FL002", Airline: "AirlineB", EmptyCapacity: 0},
+		{Number: "FL003", Airline: "AirlineA", EmptyCapacity: 12},
+		{Number: "FL004", Airline: "AirlineC", EmptyCapacity: 2},
+	}
+	filteredFlights := FilterByCapacity(flights)
+
+	expectedFlights := []FlightDetails{
+		{Number: "FL003", Airline: "AirlineA", EmptyCapacity: 12},
+		{Number: "FL004", Airline: "AirlineC", EmptyCapacity: 2},
+	}
+	assert.Len(suite.T(), filteredFlights, 2)
+	assert.Equal(suite.T(), expectedFlights, filteredFlights)
+}
+
+func (suite *FlightServiceTestSuite) TestFilterByHour() {
+	flights := []FlightDetails{
+		{Number: "FL001", Airline: "AirlineA", StartedAt: time.Date(2023, 6, 1, 10, 0, 0, 0, time.UTC)},
+		{Number: "FL002", Airline: "AirlineB", StartedAt: time.Date(2023, 6, 1, 11, 0, 0, 0, time.UTC)},
+		{Number: "FL003", Airline: "AirlineA", StartedAt: time.Date(2023, 6, 1, 10, 30, 0, 0, time.UTC)},
+		{Number: "FL004", Airline: "AirlineC", StartedAt: time.Date(2023, 6, 1, 12, 0, 0, 0, time.UTC)},
+	}
+	hour := 10
+	filteredFlights := FilterByHour(flights, hour)
+
+	expectedFlights := []FlightDetails{
+		{Number: "FL001", Airline: "AirlineA", StartedAt: time.Date(2023, 6, 1, 10, 0, 0, 0, time.UTC)},
+		{Number: "FL003", Airline: "AirlineA", StartedAt: time.Date(2023, 6, 1, 10, 30, 0, 0, time.UTC)},
+	}
+	assert.Len(suite.T(), filteredFlights, 2)
+	assert.Equal(suite.T(), expectedFlights, filteredFlights)
+}
 
 func TestFlightService(t *testing.T) {
 	suite.Run(t, new(FlightServiceTestSuite))
