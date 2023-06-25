@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"on-air/config"
 	"on-air/server/handlers"
+	"on-air/server/middlewares"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
@@ -20,7 +21,6 @@ func (cv *CustomValidator) Validate(i interface{}) error {
 	if err := cv.validator.Struct(i); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
-
 	return nil
 }
 
@@ -35,12 +35,16 @@ func SetupServer(cfg *config.Config, db *gorm.DB, redis *redis.Client, port stri
 	e.POST("/auth/login", auth.Login)
 	e.POST("/auth/register", auth.Register)
 
+	authMiddleware := &middlewares.Auth{
+		JWT: &cfg.JWT,
+	}
+
 	passenger := &handlers.Passenger{
 		DB: db,
 	}
 
-	e.POST("/passenger/add", passenger.Create)
-	e.POST("/passenger/list", passenger.Get)
+	e.POST("/passenger", passenger.Create, authMiddleware.AuthMiddleware)
+	e.GET("/passenger", passenger.Get, authMiddleware.AuthMiddleware)
 
 	return e.Start(fmt.Sprintf(":%s", port))
 }

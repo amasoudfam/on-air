@@ -9,6 +9,8 @@ CREATE TABLE users (
   updated_at timestamp with time zone,
   deleted_at timestamp with time zone
 );
+ALTER TABLE users ADD UNIQUE (email);
+ALTER TABLE users ADD UNIQUE (phone_number);
 
 CREATE TABLE countries (
   id serial PRIMARY KEY,
@@ -71,6 +73,7 @@ CREATE TABLE passengers (
   deleted_at timestamp with time zone
 );
 ALTER TABLE passengers ADD FOREIGN KEY (user_id) REFERENCES users (id);
+ALTER TABLE users ADD UNIQUE (user_id, national_code);
 
 CREATE TABLE ticket_passengers (
   ticket_id int,
@@ -78,6 +81,7 @@ CREATE TABLE ticket_passengers (
 );
 ALTER TABLE ticket_passengers ADD FOREIGN KEY (ticket_id) REFERENCES tickets (id);
 ALTER TABLE ticket_passengers ADD FOREIGN KEY (passenger_id) REFERENCES passengers (id);
+ALTER TABLE users ADD UNIQUE (ticket_id, passenger_id);
 
 CREATE TABLE payments (
   id serial PRIMARY KEY,
