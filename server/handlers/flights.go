@@ -44,12 +44,11 @@ func (f *Flight) List(ctx echo.Context) error {
 
 	var flightsList []services.FlightDetails
 	redisKey := fmt.Sprintf("%s_%s_%s_%s", "flights", req.Origin, req.Destination, req.Date)
-	cashFlights, err := f.Redis.Get(ctx.Request().Context(), redisKey).Result()
-
+	cashFlights, err := services.GetFlightsFromRedis(f.Redis, ctx.Request().Context(), redisKey)
 	if err != nil && err != redis.Nil {
 		return ctx.JSON(http.StatusInternalServerError, err.Error())
 	} else if err == redis.Nil {
-		flightsList, err = services.GetFlightsListFromApi(f.Redis, f.FlightService, redisKey, ctx, flightsList, req.Origin, req.Destination, req.Date)
+		flightsList, err = services.GetFlightsListFromApi(f.Redis, f.FlightService, redisKey, ctx.Request().Context(), flightsList, req.Origin, req.Destination, req.Date)
 		if err != nil {
 			return ctx.JSON(http.StatusInternalServerError, err.Error())
 		}

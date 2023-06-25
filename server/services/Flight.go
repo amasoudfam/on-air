@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -8,7 +9,6 @@ import (
 	"on-air/config"
 	"time"
 
-	"github.com/labstack/echo/v4"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -29,7 +29,11 @@ type ApiResponse struct {
 	Flights []FlightDetails `json:"flights"`
 }
 
-func GetFlightsListFromApi(redisClient *redis.Client, flightService *config.FlightService, redisKey string, ctx echo.Context, flightsList []FlightDetails, origin, destination, date string) ([]FlightDetails, error) {
+func GetFlightsFromRedis(redisClient *redis.Client, ctx context.Context, redisKey string) (string, error) {
+	return redisClient.Get(ctx, redisKey).Result()
+}
+
+func GetFlightsListFromApi(redisClient *redis.Client, flightService *config.FlightService, redisKey string, ctx context.Context, flightsList []FlightDetails, origin, destination, date string) ([]FlightDetails, error) {
 	address := fmt.Sprintf("%s/%s", flightService.Url, "flights")
 	url := fmt.Sprintf("%s?org=%s&dest=%s&date=%s", address, origin, destination, date)
 	res, err := http.Get(url)
@@ -51,10 +55,11 @@ func GetFlightsListFromApi(redisClient *redis.Client, flightService *config.Flig
 	if len(apiResponse.Flights) > 0 {
 		jsonData, err := json.Marshal(apiResponse.Flights)
 		if err != nil {
+
 			return nil, err
 		}
 
-		if err := redisClient.Set(ctx.Request().Context(), redisKey, jsonData, time.Minute*10).Err(); err != nil {
+		if err := redisClient.Set(ctx, redisKey, jsonData, time.Minute*10).Err(); err != nil {
 			return nil, err
 		}
 
@@ -107,3 +112,6 @@ func FilterByCapacity(flights []FlightDetails) []FlightDetails {
 
 	return filteredFlights
 }
+
+// [91 123 34 78 117 109 98 101 114 34 58 34 70 76 49 50 51 34 44 34 65 105 114 112 108 97 110 101 34 58 34 34 44 34 65 105 114 108 105 110 101 34 58 34 69 120 97 109 112 108 101 32 65 105 114 108 105 110 101 115 34 44 34 80 114 105 99 101 34 58 49 48 48 44 34 79 114 105 103 105 110 34 58 34 34 44 34 68 101 115 116 105 110 97 116 105 111 110 34 58 34 34 44 34 67 97 112 97 99 105 116 121 34 58 48 44 34 69 109 112 116 121 67 97 112 97 99 105 116 121 34 58 48 44 34 83 116 97 114 116 101 100 65 116 34 58 34 48 48 48 49 45 48 49 45 48 49 84 48 48 58 48 48 58 48 48 90 34 44 34 70 105 110 105 115 104 101 100 65 116 34 58 34 48 48 48 49 45 48 49 45 48 49 84 48 48 58 48 48 58 48 48 90 34 125 93]
+// [91 123 34 78 117 109 98 101 114 34 58 34 70 76 48 48 49 34 44 34 65 105 114 112 108 97 110 101 34 58 34 34 44 34 65 105 114 108 105 110 101 34 58 34 65 105 114 108 105 110 101 65 34 44 34 80 114 105 99 101 34 58 48 44 34 79 114 105 103 105 110 34 58 34 34 44 34 68 101 115 116 105 110 97 116 105 111 110 34 58 34 34 44 34 67 97 112 97 99 105 116 121 34 58 48 44 34 69 109 112 116 121 67 97 112 97 99 105 116 121 34 58 48 44 34 83 116 97 114 116 101 100 65 116 34 58 34 48 48 48 49 45 48 49 45 48 49 84 48 48 58 48 48 58 48 48 90 34 44 34 70 105 110 105 115 104 101 100 65 116 34 58 34 48 48 48 49 45 48 49 45 48 49 84 48 48 58 48 48 58 48 48 90 34 125 93]
