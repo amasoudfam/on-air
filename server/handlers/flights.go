@@ -26,6 +26,8 @@ type ListRequest struct {
 	Airplane      string `query:"AP"`
 	Hour          int    `query:"HO"`
 	EmptyCapacity bool   `query:"EC"`
+	OrderBy       string `query:"order_by"`
+	SortOrder     string `query:"sort_order"`
 }
 
 type ListResponse struct {
@@ -73,6 +75,17 @@ func (f *Flight) List(ctx echo.Context) error {
 
 	if req.EmptyCapacity {
 		flightsList = services.FilterByCapacity(flightsList)
+	}
+
+	if req.OrderBy != "" {
+		switch req.OrderBy {
+		case "price":
+			flightsList = services.SortByPrice(flightsList, req.SortOrder)
+		case "time":
+			flightsList = services.SortByTime(flightsList, req.SortOrder)
+		case "duration":
+			flightsList = services.SortByDuration(flightsList, req.SortOrder)
+		}
 	}
 
 	return ctx.JSON(http.StatusOK, flightsList)

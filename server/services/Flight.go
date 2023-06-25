@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"on-air/config"
+	"sort"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -117,4 +118,42 @@ func FilterByCapacity(flights []FlightDetails) []FlightDetails {
 	}
 
 	return filteredFlights
+}
+
+func SortByPrice(flights []FlightDetails, sort_order string) []FlightDetails {
+	sort.Slice(flights, func(i, j int) bool {
+		if sort_order == "desc" {
+			return flights[i].Price > flights[j].Price
+		} else {
+			return flights[i].Price < flights[j].Price
+		}
+	})
+
+	return flights
+}
+
+func SortByTime(flights []FlightDetails, sort_order string) []FlightDetails {
+	sort.Slice(flights, func(i, j int) bool {
+		if sort_order == "desc" {
+			return flights[i].StartedAt.After(flights[j].StartedAt)
+		} else {
+			return flights[i].StartedAt.Before(flights[j].StartedAt)
+		}
+	})
+
+	return flights
+}
+
+func SortByDuration(flights []FlightDetails, sort_order string) []FlightDetails {
+	sort.Slice(flights, func(i, j int) bool {
+		durationA := flights[i].FinishedAt.Sub(flights[i].StartedAt)
+		durationB := flights[j].FinishedAt.Sub(flights[j].StartedAt)
+		if sort_order == "asc" {
+			return durationA < durationB
+		} else {
+			return durationA > durationB
+		}
+	})
+
+	return flights
 }

@@ -210,6 +210,120 @@ func (suite *FlightServiceTestSuite) TestFilterByHour() {
 	assert.Equal(suite.T(), expectedFlights, filteredFlights)
 }
 
+func (suite *FlightServiceTestSuite) TestSortByPrice_desc() {
+	flights := []FlightDetails{
+		{Number: "FL001", Airline: "AirlineA", Price: 1800000},
+		{Number: "FL002", Airline: "AirlineB", Price: 1300000},
+		{Number: "FL003", Airline: "AirlineA", Price: 1900000},
+		{Number: "FL004", Airline: "AirlineC", Price: 1100000},
+	}
+	filteredFlights := SortByPrice(flights, "desc")
+
+	expectedFlights := []FlightDetails{
+		{Number: "FL003", Airline: "AirlineA", Price: 1900000},
+		{Number: "FL001", Airline: "AirlineA", Price: 1800000},
+		{Number: "FL002", Airline: "AirlineB", Price: 1300000},
+		{Number: "FL004", Airline: "AirlineC", Price: 1100000},
+	}
+
+	assert.Equal(suite.T(), expectedFlights, filteredFlights)
+}
+
+func (suite *FlightServiceTestSuite) TestSortByPrice_acs() {
+	flights := []FlightDetails{
+		{Number: "FL001", Airline: "AirlineA", Price: 1800000},
+		{Number: "FL002", Airline: "AirlineB", Price: 1300000},
+		{Number: "FL003", Airline: "AirlineA", Price: 1900000},
+		{Number: "FL004", Airline: "AirlineC", Price: 1100000},
+	}
+	sortFlights := SortByPrice(flights, "asc")
+
+	expectedFlights := []FlightDetails{
+		{Number: "FL004", Airline: "AirlineC", Price: 1100000},
+		{Number: "FL002", Airline: "AirlineB", Price: 1300000},
+		{Number: "FL001", Airline: "AirlineA", Price: 1800000},
+		{Number: "FL003", Airline: "AirlineA", Price: 1900000},
+	}
+
+	assert.Equal(suite.T(), expectedFlights, sortFlights)
+}
+
+func (suite *FlightServiceTestSuite) TestSortByTime_asc() {
+	flights := []FlightDetails{
+		{Number: "FL001", Airline: "AirlineA", StartedAt: time.Date(2023, 6, 1, 10, 0, 0, 0, time.UTC)},
+		{Number: "FL003", Airline: "AirlineA", StartedAt: time.Date(2023, 6, 2, 10, 30, 0, 0, time.UTC)},
+		{Number: "FL002", Airline: "AirlineB", StartedAt: time.Date(2023, 6, 1, 11, 0, 0, 0, time.UTC)},
+		{Number: "FL004", Airline: "AirlineC", StartedAt: time.Date(2023, 6, 2, 12, 0, 0, 0, time.UTC)},
+	}
+	sortFlights := SortByTime(flights, "asc")
+
+	expectedFlights := []FlightDetails{
+		{Number: "FL001", Airline: "AirlineA", StartedAt: time.Date(2023, 6, 1, 10, 0, 0, 0, time.UTC)},
+		{Number: "FL002", Airline: "AirlineB", StartedAt: time.Date(2023, 6, 1, 11, 0, 0, 0, time.UTC)},
+		{Number: "FL003", Airline: "AirlineA", StartedAt: time.Date(2023, 6, 2, 10, 30, 0, 0, time.UTC)},
+		{Number: "FL004", Airline: "AirlineC", StartedAt: time.Date(2023, 6, 2, 12, 0, 0, 0, time.UTC)},
+	}
+
+	assert.Equal(suite.T(), expectedFlights, sortFlights)
+}
+
+func (suite *FlightServiceTestSuite) TestSortByTime_desc() {
+	flights := []FlightDetails{
+		{Number: "FL001", Airline: "AirlineA", StartedAt: time.Date(2023, 6, 1, 10, 0, 0, 0, time.UTC)},
+		{Number: "FL003", Airline: "AirlineA", StartedAt: time.Date(2023, 6, 2, 10, 30, 0, 0, time.UTC)},
+		{Number: "FL002", Airline: "AirlineB", StartedAt: time.Date(2023, 6, 1, 11, 0, 0, 0, time.UTC)},
+		{Number: "FL004", Airline: "AirlineC", StartedAt: time.Date(2023, 6, 2, 12, 0, 0, 0, time.UTC)},
+	}
+	sortFlights := SortByTime(flights, "desc")
+
+	expectedFlights := []FlightDetails{
+		{Number: "FL004", Airline: "AirlineC", StartedAt: time.Date(2023, 6, 2, 12, 0, 0, 0, time.UTC)},
+		{Number: "FL003", Airline: "AirlineA", StartedAt: time.Date(2023, 6, 2, 10, 30, 0, 0, time.UTC)},
+		{Number: "FL002", Airline: "AirlineB", StartedAt: time.Date(2023, 6, 1, 11, 0, 0, 0, time.UTC)},
+		{Number: "FL001", Airline: "AirlineA", StartedAt: time.Date(2023, 6, 1, 10, 0, 0, 0, time.UTC)},
+	}
+
+	assert.Equal(suite.T(), expectedFlights, sortFlights)
+}
+
+func (suite *FlightServiceTestSuite) TestSortByDuration_asc() {
+	flights := []FlightDetails{
+		{Number: "FL001", StartedAt: time.Date(2023, 6, 1, 10, 0, 0, 0, time.UTC), FinishedAt: time.Date(2023, 6, 1, 11, 23, 0, 0, time.UTC)},
+		{Number: "FL003", StartedAt: time.Date(2023, 6, 2, 8, 30, 0, 0, time.UTC), FinishedAt: time.Date(2023, 6, 2, 11, 50, 0, 0, time.UTC)},
+		{Number: "FL002", StartedAt: time.Date(2023, 6, 1, 06, 0, 0, 0, time.UTC), FinishedAt: time.Date(2023, 6, 1, 10, 20, 0, 0, time.UTC)},
+		{Number: "FL004", StartedAt: time.Date(2023, 6, 2, 05, 0, 0, 0, time.UTC), FinishedAt: time.Date(2023, 6, 2, 06, 0, 0, 0, time.UTC)},
+	}
+	sortFlights := SortByDuration(flights, "asc")
+
+	expectedFlights := []FlightDetails{
+		{Number: "FL004", StartedAt: time.Date(2023, 6, 2, 05, 0, 0, 0, time.UTC), FinishedAt: time.Date(2023, 6, 2, 06, 0, 0, 0, time.UTC)},
+		{Number: "FL001", StartedAt: time.Date(2023, 6, 1, 10, 0, 0, 0, time.UTC), FinishedAt: time.Date(2023, 6, 1, 11, 23, 0, 0, time.UTC)},
+		{Number: "FL003", StartedAt: time.Date(2023, 6, 2, 8, 30, 0, 0, time.UTC), FinishedAt: time.Date(2023, 6, 2, 11, 50, 0, 0, time.UTC)},
+		{Number: "FL002", StartedAt: time.Date(2023, 6, 1, 06, 0, 0, 0, time.UTC), FinishedAt: time.Date(2023, 6, 1, 10, 20, 0, 0, time.UTC)},
+	}
+
+	assert.Equal(suite.T(), expectedFlights, sortFlights)
+}
+
+func (suite *FlightServiceTestSuite) TestSortByDuration_desc() {
+	flights := []FlightDetails{
+		{Number: "FL001", StartedAt: time.Date(2023, 6, 1, 10, 0, 0, 0, time.UTC), FinishedAt: time.Date(2023, 6, 1, 11, 23, 0, 0, time.UTC)},
+		{Number: "FL003", StartedAt: time.Date(2023, 6, 2, 8, 30, 0, 0, time.UTC), FinishedAt: time.Date(2023, 6, 2, 11, 50, 0, 0, time.UTC)},
+		{Number: "FL002", StartedAt: time.Date(2023, 6, 1, 06, 0, 0, 0, time.UTC), FinishedAt: time.Date(2023, 6, 1, 10, 20, 0, 0, time.UTC)},
+		{Number: "FL004", StartedAt: time.Date(2023, 6, 2, 05, 0, 0, 0, time.UTC), FinishedAt: time.Date(2023, 6, 2, 06, 0, 0, 0, time.UTC)},
+	}
+	sortFlights := SortByDuration(flights, "desc")
+
+	expectedFlights := []FlightDetails{
+		{Number: "FL002", StartedAt: time.Date(2023, 6, 1, 06, 0, 0, 0, time.UTC), FinishedAt: time.Date(2023, 6, 1, 10, 20, 0, 0, time.UTC)},
+		{Number: "FL003", StartedAt: time.Date(2023, 6, 2, 8, 30, 0, 0, time.UTC), FinishedAt: time.Date(2023, 6, 2, 11, 50, 0, 0, time.UTC)},
+		{Number: "FL001", StartedAt: time.Date(2023, 6, 1, 10, 0, 0, 0, time.UTC), FinishedAt: time.Date(2023, 6, 1, 11, 23, 0, 0, time.UTC)},
+		{Number: "FL004", StartedAt: time.Date(2023, 6, 2, 05, 0, 0, 0, time.UTC), FinishedAt: time.Date(2023, 6, 2, 06, 0, 0, 0, time.UTC)},
+	}
+
+	assert.Equal(suite.T(), expectedFlights, sortFlights)
+}
+
 func TestFlightService(t *testing.T) {
 	suite.Run(t, new(FlightServiceTestSuite))
 }
