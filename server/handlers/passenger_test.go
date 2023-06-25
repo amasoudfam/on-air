@@ -65,7 +65,7 @@ func (suite *CreatePassengerTestSuite) CallCreateHandler(requestBody string) (*h
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	res := httptest.NewRecorder()
 	c := suite.e.NewContext(req, res)
-	c.Set("id", "lname")
+	c.Set("id", "2")
 	err := suite.passenger.Create(c)
 	return res, err
 }
@@ -75,7 +75,7 @@ func (suite *CreatePassengerTestSuite) CallGetHandler() (*httptest.ResponseRecor
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	res := httptest.NewRecorder()
 	c := suite.e.NewContext(req, res)
-	c.Set("id", "lname")
+	c.Set("id", "2")
 	err := suite.passenger.Get(c)
 	return res, err
 }
@@ -95,7 +95,7 @@ func (suite *CreatePassengerTestSuite) TestCreatePassenger_Success() {
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	suite.sqlMock.ExpectCommit()
 
-	requestBody := `{"nationalcode": "0123456789","firstname": "name","lastname": "lname","user_id": 2,"gender": "f"}`
+	requestBody := `{"nationalcode": "0123456789","firstname": "name","lastname": "lname","gender": "f"}`
 	res, err := suite.CallCreateHandler(requestBody)
 	require.NoError(err)
 	require.Equal(expectedStatusCode, res.Code)
@@ -104,7 +104,7 @@ func (suite *CreatePassengerTestSuite) TestCreatePassenger_Success() {
 func (suite *CreatePassengerTestSuite) TestCreatePassenger_ParseReq_Failure() {
 	require := suite.Require()
 	expectedStatusCode := http.StatusBadRequest
-	requestBody := `{"nationalcode: "1000011111","firstname": "name","lastname": "lname","user_id": 2,"gender": "f"}`
+	requestBody := `{"nationalcode: "1000011111","firstname": "name","lastname": "lname","gender": "f"}`
 
 	res, err := suite.CallCreateHandler(requestBody)
 	require.NoError(err)
@@ -115,7 +115,7 @@ func (suite *CreatePassengerTestSuite) TestCreatePassenger_ValidateNationalCode_
 	require := suite.Require()
 	expectedStatusCode := http.StatusBadRequest
 	expectedErr := "\"Invalid national code\"\n"
-	requestBody := `{"nationalcode": "323","firstname": "name","lastname": "lname","user_id": 2,"gender": "f"}`
+	requestBody := `{"nationalcode": "323","firstname": "name","lastname": "lname","gender": "f"}`
 
 	res, err := suite.CallCreateHandler(requestBody)
 	require.NoError(err)
