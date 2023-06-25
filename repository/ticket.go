@@ -17,6 +17,7 @@ func ReserveTicket(db *gorm.DB, userID int, flightID int, unitPrice int, passeng
 	}
 
 	//TODO: Third party call to mock server to reserve a flight
+	//TODO: add flight in data base
 
 	ticket := models.Ticket{
 		UserID:     uint(userID),

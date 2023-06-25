@@ -17,11 +17,11 @@ type Payment struct {
 }
 
 type PayRequest struct {
-	TicketID uint `json:"TicketID" binding:"required"`
+	TicketID uint `json:"ticket_id" binding:"required"`
 }
 
 type PayResponse struct {
-	Address string `json:"Token" binding:"required"`
+	Address string `json:"token" binding:"required"`
 }
 
 func (t *Payment) Pay(ctx echo.Context) error {
@@ -57,11 +57,11 @@ func (t *Payment) Pay(ctx echo.Context) error {
 }
 
 type CallBackRequest struct {
-	PaymentID uint `json:"PaymentID" binding:"required"`
+	PaymentID uint `json:"payment_id" binding:"required"`
 }
 
 type CallBackResponse struct {
-	Status string `json:"Status" binding:"required"`
+	Status string `json:"status" binding:"required"`
 }
 
 func (t *Payment) CallBack(ctx echo.Context) error {

@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"on-air/config"
 	"on-air/repository"
-	"strings"
 
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
@@ -16,13 +15,13 @@ type Ticket struct {
 }
 
 type ReserveRequest struct {
-	UnitPrice    int   `json:"UnitPrice" binding:"required"`
-	FlightID     int   `json:"FlightID" binding:"required"`
-	PassengerIDs []int `json:"PassengerIDs" binding:"required"`
+	Price        int   `json:"price" binding:"required"`
+	FlightID     int   `json:"flight_id" binding:"required"`
+	PassengerIDs []int `json:"passengers" binding:"required"`
 }
 
 type ReserveResponse struct {
-	Status string `json:"Status" binding:"required"`
+	Status string `json:"status" binding:"required"`
 }
 
 func (t *Ticket) Reserve(ctx echo.Context) error {
@@ -35,22 +34,13 @@ func (t *Ticket) Reserve(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, err.Error())
 	}
 
-	reqToken := ctx.Request().Header.Get("Authorization")
-	splitToken := strings.Split(reqToken, "Bearer ")
-	reqToken = splitToken[1]
+	userId := ctx.Get("id").(int)
 
-	payLoad, err := repository.VerifyToken(t.JWT, reqToken)
-	if err != nil {
-		return ctx.JSON(http.StatusUnauthorized, "Internal server error")
-	}
-
-	// TODO repository
-	// TODO error package
 	dbUser, err := repository.ReserveTicket(
 		t.DB,
-		payLoad.UserID,
+		userId,
 		req.FlightID,
-		req.UnitPrice,
+		req.Price,
 		req.PassengerIDs,
 	)
 
