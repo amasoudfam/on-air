@@ -44,7 +44,6 @@ func SetupServer(cfg *config.Config, db *gorm.DB, redis *redis.Client, port stri
 
 	payment := &handlers.Payment{
 		DB:  db,
-		JWT: &cfg.JWT,
 		IPG: &cfg.IPG,
 	}
 

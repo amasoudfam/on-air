@@ -12,7 +12,6 @@ import (
 
 type Payment struct {
 	DB  *gorm.DB
-	JWT *config.JWT
 	IPG *config.IPG
 }
 
@@ -37,11 +36,6 @@ func (t *Payment) Pay(ctx echo.Context) error {
 	reqToken := ctx.Request().Header.Get("Authorization")
 	splitToken := strings.Split(reqToken, "Bearer ")
 	reqToken = splitToken[1]
-
-	_, err := repository.VerifyToken(t.JWT, reqToken)
-	if err != nil {
-		return ctx.JSON(http.StatusUnauthorized, "Internal server error")
-	}
 
 	// TODO repository
 	// TODO error package
