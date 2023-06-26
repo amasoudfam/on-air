@@ -26,18 +26,6 @@ type CreatePassengerTestSuite struct {
 	passenger *Passenger
 }
 
-type CustomValidator struct {
-	validator *validator.Validate
-}
-
-func (cv *CustomValidator) Validate(i interface{}) error {
-	if err := cv.validator.Struct(i); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-
-	return nil
-}
-
 func (suite *CreatePassengerTestSuite) SetupSuite() {
 	mockDB, sqlMock, err := sqlmock.New()
 	if err != nil {
@@ -56,7 +44,7 @@ func (suite *CreatePassengerTestSuite) SetupSuite() {
 	suite.sqlMock = sqlMock
 	suite.passenger = &Passenger{DB: db}
 	suite.e = echo.New()
-	suite.e.Validator = &CustomValidator{validator: validator.New()}
+	suite.e.Validator = &utils.CustomValidator{Validator: validator.New()}
 	suite.endpoint = "/passenger"
 }
 
@@ -115,7 +103,7 @@ func (suite *CreatePassengerTestSuite) TestCreatePassenger_ValidateNationalCode_
 	require := suite.Require()
 	expectedStatusCode := http.StatusBadRequest
 	expectedErr := "\"Invalid national code\"\n"
-	requestBody := `{"nationalcode": "323","firstname": "name","lastname": "lname","gender": "f"}`
+	requestBody := `{"nationalcode": "1234567890","firstname": "name","lastname": "lname","gender": "f"}`
 
 	res, err := suite.CallCreateHandler(requestBody)
 	require.NoError(err)
