@@ -145,6 +145,17 @@ func (suite *PassengerTestSuite) TestCreatePassenger_InvalidColumn_Failure() {
 	require.Equal(expectedStatusCode, res.Code)
 }
 
+func (suite *PassengerTestSuite) TestCreatePassenger_MissedColumn_Failure() {
+	require := suite.Require()
+	expectedStatusCode := http.StatusBadRequest
+
+	requestBody := `{"nationalcode": "1000011111", "lastname": "lname", "gender": "f"}`
+
+	res, err := suite.CallCreateHandler(requestBody)
+	require.NoError(err)
+	require.Equal(expectedStatusCode, res.Code)
+}
+
 func (suite *PassengerTestSuite) TestCreatePassenger_ValidateNationalCode_Failure() {
 	require := suite.Require()
 	expectedStatusCode := http.StatusBadRequest
