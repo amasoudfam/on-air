@@ -21,14 +21,12 @@ type FlightServiceTestSuite struct {
 	suite.Suite
 	mockRedis redismock.ClientMock
 	redis     *redis.Client
-	endpoint  string
 }
 
 func (suite *FlightServiceTestSuite) SetupSuite() {
 	mockRedis, mock := redismock.NewClientMock()
 	suite.redis = mockRedis
 	suite.mockRedis = mock
-	suite.endpoint = "/flights"
 }
 
 func (suite *FlightServiceTestSuite) TestGetFlightsFromRedis_Success() {

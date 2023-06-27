@@ -49,10 +49,7 @@ func GetFlightsListFromApi(redisClient *redis.Client, flightService *config.Flig
 		return nil, errors.New("web service returned an error")
 	}
 
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		return nil, err
-	}
+	body, _ := io.ReadAll(res.Body)
 
 	var apiResponse ApiResponse
 	if err := json.Unmarshal(body, &apiResponse); err != nil {
@@ -62,7 +59,6 @@ func GetFlightsListFromApi(redisClient *redis.Client, flightService *config.Flig
 	if len(apiResponse.Flights) > 0 {
 		jsonData, err := json.Marshal(apiResponse.Flights)
 		if err != nil {
-
 			return nil, err
 		}
 

@@ -19,10 +19,10 @@ type Flight struct {
 }
 
 type ListRequest struct {
-	Origin        string `query:"org" validate:"required"`
-	Destination   string `query:"dest" validate:"required"`
-	Date          string `query:"date" validate:"required,datetime=2006-01-02"`
-	Airline       string `query:"AL"`
+	Origin        string `query:"org" param:"json" validate:"required"`
+	Destination   string `query:"dest" param:"json" validate:"required"`
+	Date          string `query:"date" param:"json" validate:"required,datetime=2006-01-02"`
+	Airline       string `query:"Al"`
 	Airplane      string `query:"AP"`
 	Hour          int    `query:"HO"`
 	EmptyCapacity bool   `query:"EC"`
@@ -48,7 +48,6 @@ func (f *Flight) List(ctx echo.Context) error {
 	redisKey := fmt.Sprintf("%s_%s_%s_%s", "flights", req.Origin, req.Destination, req.Date)
 	cashFlights, err := services.GetFlightsFromRedis(f.Redis, ctx.Request().Context(), redisKey)
 	if err != nil && err != redis.Nil {
-		return ctx.JSON(http.StatusInternalServerError, err.Error())
 	} else if err == redis.Nil {
 		flightsList, err = services.GetFlightsListFromApi(f.Redis, f.FlightService, redisKey, ctx.Request().Context(), flightsList, req.Origin, req.Destination, req.Date)
 		if err != nil {
@@ -88,5 +87,7 @@ func (f *Flight) List(ctx echo.Context) error {
 		}
 	}
 
-	return ctx.JSON(http.StatusOK, flightsList)
+	return ctx.JSON(http.StatusOK, ListResponse{
+		Flights: flightsList,
+	})
 }
