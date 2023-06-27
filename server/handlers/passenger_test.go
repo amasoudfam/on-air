@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"on-air/utils"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -17,6 +18,8 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
+
+const UserID = 3
 
 type CreatePassengerTestSuite struct {
 	suite.Suite
@@ -53,17 +56,17 @@ func (suite *CreatePassengerTestSuite) CallCreateHandler(requestBody string) (*h
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	res := httptest.NewRecorder()
 	c := suite.e.NewContext(req, res)
-	c.Set("id", "2")
+	c.Set("id", strconv.Itoa(UserID))
 	err := suite.passenger.Create(c)
 	return res, err
 }
 
 func (suite *CreatePassengerTestSuite) CallGetHandler() (*httptest.ResponseRecorder, error) {
-	req := httptest.NewRequest(http.MethodPost, suite.endpoint, nil)
+	req := httptest.NewRequest(http.MethodGet, suite.endpoint, nil)
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	res := httptest.NewRecorder()
 	c := suite.e.NewContext(req, res)
-	c.Set("id", "2")
+	c.Set("id", strconv.Itoa(UserID))
 	err := suite.passenger.Get(c)
 	return res, err
 }
@@ -75,7 +78,6 @@ func (suite *CreatePassengerTestSuite) TestCreatePassenger_Success() {
 	monkey.Patch(utils.ValidateNationalCode, func(_ string) bool {
 		return true
 	})
-
 	defer monkey.Unpatch(utils.ValidateNationalCode)
 
 	suite.sqlMock.ExpectBegin()
@@ -92,7 +94,30 @@ func (suite *CreatePassengerTestSuite) TestCreatePassenger_Success() {
 func (suite *CreatePassengerTestSuite) TestCreatePassenger_ParseReq_Failure() {
 	require := suite.Require()
 	expectedStatusCode := http.StatusBadRequest
+
 	requestBody := `{"nationalcode: "1000011111","firstname": "name","lastname": "lname","gender": "f"}`
+
+	res, err := suite.CallCreateHandler(requestBody)
+	require.NoError(err)
+	require.Equal(expectedStatusCode, res.Code)
+}
+
+func (suite *CreatePassengerTestSuite) TestCreatePassenger_EmptyField_Failure() {
+	require := suite.Require()
+	expectedStatusCode := http.StatusBadRequest
+
+	requestBody := `{"nationalcode": "1000011111","firstname": "","lastname": "lname","gender": "f"}`
+
+	res, err := suite.CallCreateHandler(requestBody)
+	require.NoError(err)
+	require.Equal(expectedStatusCode, res.Code)
+}
+
+func (suite *CreatePassengerTestSuite) TestCreatePassenger_InvalidColumn_Failure() {
+	require := suite.Require()
+	expectedStatusCode := http.StatusBadRequest
+
+	requestBody := `{"nationalcode": "1000011111","first_name": "fname","lastname": "lname","gender": "f"}`
 
 	res, err := suite.CallCreateHandler(requestBody)
 	require.NoError(err)
@@ -112,18 +137,16 @@ func (suite *CreatePassengerTestSuite) TestCreatePassenger_ValidateNationalCode_
 	require.Equal(expectedErr, string(body))
 }
 
-func (suite *CreatePassengerTestSuite) TestListPassenger() {
+func (suite *CreatePassengerTestSuite) TestListPassenger_Success() {
 	require := suite.Require()
 	expectedStatusCode := http.StatusOK
 
 	mockRow := suite.sqlMock.NewRows(
 		[]string{
-			"nationalcode", "firstname", "lastname", "user_id", "gender",
-		}).
-		AddRow("1000011111", "name", "lname", 2, "f")
+			"nationalcode", "firstname", "lastname", "gender",
+		}).AddRow("1000011111", "name", "lname", "f")
 
-	suite.sqlMock.ExpectQuery("SELECT (.+) FROM `passengers`").
-		WillReturnRows(mockRow)
+	suite.sqlMock.ExpectQuery("SELECT (.+) FROM `passengers` WHERE user_id = ?").WithArgs(UserID).WillReturnRows(mockRow)
 	res, err := suite.CallGetHandler()
 	require.NoError(err)
 	require.Equal(expectedStatusCode, res.Code)

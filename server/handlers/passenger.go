@@ -16,15 +16,16 @@ type Passenger struct {
 }
 
 type CreateRequest struct {
-	NationalCode string `json:"nationalcode" binding:"required"`
-	FirstName    string `json:"firstname" binding:"required"`
-	LastName     string `json:"lastname" binding:"required"`
-	Gender       string `json:"gender" binding:"required"`
+	NationalCode string `json:"nationalcode" binding:"required" validate:"required"`
+	FirstName    string `json:"firstname" binding:"required" validate:"required"`
+	LastName     string `json:"lastname" binding:"required" validate:"required"`
+	Gender       string `json:"gender" binding:"required" validate:"required"`
 }
 
 func (p *Passenger) Create(ctx echo.Context) error {
 	userID, _ := strconv.Atoi(ctx.Get("id").(string))
 	var req CreateRequest
+
 	if err := ctx.Bind(&req); err != nil {
 		return ctx.NoContent(http.StatusBadRequest)
 	}
@@ -58,10 +59,10 @@ func (p *Passenger) Create(ctx echo.Context) error {
 }
 
 type GetResponse struct {
-	NationalCode string `json:"nationalcode" binding:"required"`
-	FirstName    string `json:"firstname" binding:"required"`
-	LastName     string `json:"lastname" binding:"required"`
-	Gender       string `json:"gender" binding:"required"`
+	NationalCode string `json:"nationalcode" binding:"required" validate:"required"`
+	FirstName    string `json:"firstname" binding:"required" validate:"required"`
+	LastName     string `json:"lastname" binding:"required" validate:"required"`
+	Gender       string `json:"gender" binding:"required" validate:"required"`
 }
 
 func (p *Passenger) Get(ctx echo.Context) error {
@@ -71,18 +72,16 @@ func (p *Passenger) Get(ctx echo.Context) error {
 		return ctx.NoContent(http.StatusInternalServerError)
 	}
 	var response []GetResponse
-	if len(*passengers) == 0 {
-		return ctx.JSON(http.StatusOK, response)
+	if len(*passengers) > 0 {
+		response = make([]GetResponse, 0, len(*passengers))
+		for _, p := range *passengers {
+			response = append(response, GetResponse{
+				FirstName:    p.FirstName,
+				LastName:     p.LastName,
+				NationalCode: p.NationalCode,
+				Gender:       p.Gender,
+			})
+		}
 	}
-	response = make([]GetResponse, 0, len(*passengers))
-	for _, p := range *passengers {
-		response = append(response, GetResponse{
-			FirstName:    p.FirstName,
-			LastName:     p.LastName,
-			NationalCode: p.NationalCode,
-			Gender:       p.Gender,
-		})
-	}
-
 	return ctx.JSON(http.StatusOK, response)
 }
