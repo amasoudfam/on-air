@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"io"
 	"log"
 	"net/http"
@@ -71,7 +72,7 @@ func (suite *CreatePassengerTestSuite) CallGetHandler() (*httptest.ResponseRecor
 	return res, err
 }
 
-func (suite *CreatePassengerTestSuite) TestCreatePassenger_Success() {
+func (suite *CreatePassengerTestSuite) TestCreatePassenger_CreatePassenger_Success() {
 	require := suite.Require()
 	expectedStatusCode := http.StatusCreated
 
@@ -84,6 +85,26 @@ func (suite *CreatePassengerTestSuite) TestCreatePassenger_Success() {
 	suite.sqlMock.ExpectExec("INSERT INTO `passengers`").
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	suite.sqlMock.ExpectCommit()
+
+	requestBody := `{"nationalcode": "0123456789","firstname": "name","lastname": "lname","gender": "f"}`
+	res, err := suite.CallCreateHandler(requestBody)
+	require.NoError(err)
+	require.Equal(expectedStatusCode, res.Code)
+}
+
+func (suite *CreatePassengerTestSuite) TestCreatePassenger_CreatePassenger_Failure() {
+	require := suite.Require()
+	expectedStatusCode := http.StatusInternalServerError
+
+	monkey.Patch(utils.ValidateNationalCode, func(_ string) bool {
+		return true
+	})
+	defer monkey.Unpatch(utils.ValidateNationalCode)
+
+	suite.sqlMock.ExpectBegin()
+	suite.sqlMock.ExpectExec("INSERT INTO `passengers`").
+		WillReturnError(errors.New(""))
+	suite.sqlMock.ExpectRollback()
 
 	requestBody := `{"nationalcode": "0123456789","firstname": "name","lastname": "lname","gender": "f"}`
 	res, err := suite.CallCreateHandler(requestBody)
@@ -137,7 +158,7 @@ func (suite *CreatePassengerTestSuite) TestCreatePassenger_ValidateNationalCode_
 	require.Equal(expectedErr, string(body))
 }
 
-func (suite *CreatePassengerTestSuite) TestListPassenger_Success() {
+func (suite *CreatePassengerTestSuite) TestListPassenger_Get_Success() {
 	require := suite.Require()
 	expectedStatusCode := http.StatusOK
 
@@ -147,6 +168,22 @@ func (suite *CreatePassengerTestSuite) TestListPassenger_Success() {
 		}).AddRow("1000011111", "name", "lname", "f")
 
 	suite.sqlMock.ExpectQuery("SELECT (.+) FROM `passengers` WHERE user_id = ?").WithArgs(UserID).WillReturnRows(mockRow)
+	res, err := suite.CallGetHandler()
+	require.NoError(err)
+	require.Equal(expectedStatusCode, res.Code)
+}
+
+func (suite *CreatePassengerTestSuite) TestListPassenger_Get__Failure() {
+	require := suite.Require()
+	expectedStatusCode := http.StatusInternalServerError
+
+	monkey.Patch(utils.ValidateNationalCode, func(_ string) bool {
+		return true
+	})
+	defer monkey.Unpatch(utils.ValidateNationalCode)
+
+	suite.sqlMock.ExpectQuery("SELECT (.+) FROM `passengers` WHERE user_id = ?").WithArgs(UserID).WillReturnError(errors.New(""))
+
 	res, err := suite.CallGetHandler()
 	require.NoError(err)
 	require.Equal(expectedStatusCode, res.Code)
