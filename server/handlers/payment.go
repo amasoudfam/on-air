@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"on-air/config"
 	"on-air/repository"
-	"strings"
 
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
@@ -33,12 +32,6 @@ func (t *Payment) Pay(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, err.Error())
 	}
 
-	reqToken := ctx.Request().Header.Get("Authorization")
-	splitToken := strings.Split(reqToken, "Bearer ")
-	reqToken = splitToken[1]
-
-	// TODO repository
-	// TODO error package
 	address, err := repository.PayTicket(t.DB, t.IPG, req.TicketID)
 
 	if err != nil {
@@ -68,8 +61,6 @@ func (t *Payment) CallBack(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, err.Error())
 	}
 
-	// TODO repository
-	// TODO error package
 	status, err := repository.VerifyPayment(t.DB, t.IPG, req.PaymentID)
 
 	if err != nil {
