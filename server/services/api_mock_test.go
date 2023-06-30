@@ -30,11 +30,11 @@ func (suite *FlightServiceTestSuite) SetupSuite() {
 }
 
 type ListResponse struct {
-	Flights []FlightDetails `json:"flights"`
+	Flights []FlightResponse `json:"flights"`
 }
 
 func (suite *FlightServiceTestSuite) TestGetFlightsListFromApi_Success() {
-	data := []FlightDetails{
+	data := []FlightResponse{
 		{
 			Number:  "FL001",
 			Airline: "AirlineA",
@@ -55,12 +55,12 @@ func (suite *FlightServiceTestSuite) TestGetFlightsListFromApi_Success() {
 
 	httpmock.RegisterResponder("GET", expectedURL, httpmock.NewStringResponder(http.StatusOK, expectedResponse))
 
-	flightService := &config.FlightService{
-		Url: "https://api.example.com",
+	flightService := &config.APIMock{
+		BaseURL: "https://api.example.com",
 	}
 
-	flightsList := []FlightDetails{}
-	flights, err := GetFlightsListFromApi(suite.redis, flightService, "redis_key", context.TODO(), flightsList, "origin", "destination", "date")
+	flightsList := []FlightResponse{}
+	flights, err := GetFlights(suite.redis, flightService, "redis_key", context.TODO(), flightsList, "origin", "destination", "date")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -74,7 +74,7 @@ func (suite *FlightServiceTestSuite) TestGetFlightsListFromApi_Success() {
 }
 
 func (suite *FlightServiceTestSuite) TestGetFlightsListFromApi_webService_Failure() {
-	data := []FlightDetails{
+	data := []FlightResponse{
 		{
 			Number:  "FL001",
 			Airline: "AirlineA",
@@ -89,18 +89,18 @@ func (suite *FlightServiceTestSuite) TestGetFlightsListFromApi_webService_Failur
 	expectedURL := "https://api.example.com/flights?org=origin&dest=destination&date=date"
 	httpmock.RegisterResponder("GET", expectedURL, httpmock.NewStringResponder(http.StatusInternalServerError, "Internal Server Error"))
 
-	flightService := &config.FlightService{
-		Url: "https://api2.example.com",
+	flightService := &config.APIMock{
+		BaseURL: "https://api2.example.com",
 	}
 
-	flightsList := []FlightDetails{}
-	_, err := GetFlightsListFromApi(suite.redis, flightService, "redis_key", context.TODO(), flightsList, "origin", "destination", "date")
+	flightsList := []FlightResponse{}
+	_, err := GetFlights(suite.redis, flightService, "redis_key", context.TODO(), flightsList, "origin", "destination", "date")
 
 	assert.NotNil(suite.T(), err)
 }
 
 func (suite *FlightServiceTestSuite) TestGetFlightsListFromApi_webService_500_Failure() {
-	data := []FlightDetails{
+	data := []FlightResponse{
 		{
 			Number:  "FL001",
 			Airline: "AirlineA",
@@ -115,12 +115,12 @@ func (suite *FlightServiceTestSuite) TestGetFlightsListFromApi_webService_500_Fa
 	expectedURL := "https://api.example.com/flights?org=origin&dest=destination&date=date"
 	httpmock.RegisterResponder("GET", expectedURL, httpmock.NewStringResponder(http.StatusInternalServerError, "Internal Server Error"))
 
-	flightService := &config.FlightService{
-		Url: "https://api.example.com",
+	flightService := &config.APIMock{
+		BaseURL: "https://api.example.com",
 	}
 
-	flightsList := []FlightDetails{}
-	_, err := GetFlightsListFromApi(suite.redis, flightService, "redis_key", context.TODO(), flightsList, "origin", "destination", "date")
+	flightsList := []FlightResponse{}
+	_, err := GetFlights(suite.redis, flightService, "redis_key", context.TODO(), flightsList, "origin", "destination", "date")
 
 	assert.EqualError(suite.T(), err, "web service returned an error")
 }

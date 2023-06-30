@@ -27,6 +27,7 @@ type Redis struct {
 	Port     int
 	Password string
 	DB       int
+	TTL      time.Duration
 }
 
 type Server struct {
@@ -39,12 +40,12 @@ type JWT struct {
 	LifeTime time.Duration
 }
 
-type FlightService struct {
-	Url string
+type APIMock struct {
+	BaseURL string
 }
 
 type Services struct {
-	Flights FlightService
+	Flights APIMock
 }
 
 func InitConfig(configPath string) (*Config, error) {
@@ -68,6 +69,7 @@ func InitConfig(configPath string) (*Config, error) {
 			Port:     viper.GetInt("redis.port"),
 			Password: viper.GetString("redis.password"),
 			DB:       viper.GetInt("redis.db"),
+			TTL:      viper.GetDuration("redis.ttl"),
 		},
 		Server: Server{
 			Port: viper.GetString("server.port"),
@@ -77,8 +79,8 @@ func InitConfig(configPath string) (*Config, error) {
 			LifeTime:  viper.GetDuration("auth.lifetime"),
 		},
 		Services: Services{
-			Flights: FlightService{
-				Url: viper.GetString("services.fights.url"),
+			Flights: APIMock{
+				BaseURL: viper.GetString("services.fights.url"),
 			},
 		},
 	}, nil

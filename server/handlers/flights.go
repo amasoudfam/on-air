@@ -17,7 +17,8 @@ import (
 
 type Flight struct {
 	Redis         *redis.Client
-	FlightService *config.FlightService
+	APIMockClient *services.APIMockClient
+	Cache         *config.Redis
 }
 
 type FlightDetails struct {
@@ -34,9 +35,9 @@ type FlightDetails struct {
 }
 
 type ListRequest struct {
-	Origin        string `query:"org" param:"json" validate:"required"`
-	Destination   string `query:"dest" param:"json" validate:"required"`
-	Date          string `query:"date" param:"json" validate:"required,datetime=2006-01-02"`
+	Origin        string `query:"org" validate:"required"`
+	Destination   string `query:"dest" validate:"required"`
+	Date          string `query:"date" validate:"required,datetime=2006-01-02"`
 	Airline       string `query:"airline"`
 	Airplane      string `query:"airplane"`
 	StartTime     string `query:"start_time" validate:"omitempty,CustomTimeValidator"`
@@ -47,7 +48,7 @@ type ListRequest struct {
 }
 
 type ListResponse struct {
-	Flights []services.FlightDetails `json:"flights"`
+	Flights []services.FlightResponse `json:"flights"`
 }
 
 func (f *Flight) List(ctx echo.Context) error {
@@ -60,72 +61,71 @@ func (f *Flight) List(ctx echo.Context) error {
 		return ctx.JSON(http.StatusUnprocessableEntity, err.Error())
 	}
 
-	var flightsList []services.FlightDetails
-	redisKey := fmt.Sprintf("%s_%s_%s_%s", "flights", req.Origin, req.Destination, req.Date)
-	cashFlights, err := f.Redis.Get(ctx.Request().Context(), redisKey).Result()
+	var flights []services.FlightResponse
+	redisKey := fmt.Sprintf("flights_%s_%s_%s", req.Origin, req.Destination, req.Date)
+	cashResult, err := f.Redis.Get(ctx.Request().Context(), redisKey).Result()
 
 	if err != nil && err != redis.Nil {
 		return ctx.JSON(http.StatusInternalServerError, err.Error())
 	} else if err == redis.Nil {
-		flights, err := services.GetFlightsListFromApi(f.Redis, f.FlightService, redisKey, ctx.Request().Context(), flightsList, req.Origin, req.Destination, req.Date)
+		apiResult, err := f.APIMockClient.GetFlights(req.Origin, req.Destination, req.Date)
 		if err != nil {
 			return ctx.JSON(http.StatusInternalServerError, err.Error())
 		}
 
-		if len(flights) > 0 {
-			jsonData, err := json.Marshal(flights)
+		if len(apiResult) > 0 {
+			jsonData, err := json.Marshal(apiResult)
 			if err != nil {
 				return ctx.JSON(http.StatusInternalServerError, err.Error())
 			}
 
-			if err := f.Redis.Set(ctx.Request().Context(), redisKey, jsonData, time.Minute*10).Err(); err != nil {
+			if err := f.Redis.Set(ctx.Request().Context(), redisKey, jsonData, f.Cache.TTL).Err(); err != nil {
 				return ctx.JSON(http.StatusInternalServerError, err.Error())
 			}
 
-			flightsList = flights
+			flights = apiResult
 		}
 
 	} else {
-		if err := json.Unmarshal([]byte(cashFlights), &flightsList); err != nil {
+		if err := json.Unmarshal([]byte(cashResult), &flights); err != nil {
 			return ctx.JSON(http.StatusInternalServerError, err.Error())
 		}
 	}
 
-	// filters
 	if req.Airline != "" {
-		flightsList = filterByAirline(flightsList, req.Airline)
+		flights = filterByAirline(flights, req.Airline)
 	}
 
 	if req.Airplane != "" {
-		flightsList = filterByAirplane(flightsList, req.Airplane)
+		flights = filterByAirplane(flights, req.Airplane)
 	}
 
 	if req.StartTime != "" {
-		flightsList = filterByTime(flightsList, req.StartTime, req.EndTime)
+		flights = filterByTime(flights, req.StartTime, req.EndTime)
 	}
 
 	if req.EmptyCapacity {
-		flightsList = filterByCapacity(flightsList)
+		flights = filterByCapacity(flights)
 	}
 
 	if req.OrderBy != "" {
 		switch req.OrderBy {
 		case "price":
-			flightsList = sortByPrice(flightsList, req.SortOrder)
+			flights = sortByPrice(flights, req.SortOrder)
 		case "time":
-			flightsList = sortByTime(flightsList, req.SortOrder)
+			flights = sortByTime(flights, req.SortOrder)
 		case "duration":
-			flightsList = sortByDuration(flightsList, req.SortOrder)
+			flights = sortByDuration(flights, req.SortOrder)
 		}
 	}
 
 	return ctx.JSON(http.StatusOK, ListResponse{
-		Flights: flightsList,
+		Flights: flights,
 	})
 }
 
-func filterByAirline(flights []services.FlightDetails, airline string) []services.FlightDetails {
-	filteredFlights := make([]services.FlightDetails, 0)
+func filterByAirline(flights []services.FlightResponse, airline string) []services.FlightResponse {
+	filteredFlights := make([]services.FlightResponse, 0)
 	for _, flight := range flights {
 		if flight.Airline == airline {
 			filteredFlights = append(filteredFlights, flight)
@@ -135,8 +135,8 @@ func filterByAirline(flights []services.FlightDetails, airline string) []service
 	return filteredFlights
 }
 
-func filterByAirplane(flights []services.FlightDetails, airplane string) []services.FlightDetails {
-	filteredFlights := make([]services.FlightDetails, 0)
+func filterByAirplane(flights []services.FlightResponse, airplane string) []services.FlightResponse {
+	filteredFlights := make([]services.FlightResponse, 0)
 	for _, flight := range flights {
 		if flight.Airplane == airplane {
 			filteredFlights = append(filteredFlights, flight)
@@ -146,17 +146,16 @@ func filterByAirplane(flights []services.FlightDetails, airplane string) []servi
 	return filteredFlights
 }
 
-func filterByTime(flights []services.FlightDetails, start_time, end_time string) []services.FlightDetails {
-	startHourSplit := strings.Split(start_time, ":")
-	startHour, _ := strconv.Atoi(startHourSplit[0])
-	startMinute, _ := strconv.Atoi(startHourSplit[1])
+func filterByTime(flights []services.FlightResponse, startTime, endTime string) []services.FlightResponse {
+	startTimeSplit := strings.Split(startTime, ":")
+	startHour, _ := strconv.Atoi(startTimeSplit[0])
+	startMinute, _ := strconv.Atoi(startTimeSplit[1])
 
-	endTimeSplit := strings.Split(end_time, ":")
+	endTimeSplit := strings.Split(endTime, ":")
 	endHour, _ := strconv.Atoi(endTimeSplit[0])
 	endMinute, _ := strconv.Atoi(endTimeSplit[1])
 
-	strings.Split(end_time, ":")
-	filteredFlights := make([]services.FlightDetails, 0)
+	filteredFlights := make([]services.FlightResponse, 0)
 	for _, flight := range flights {
 		flightStartTime := flight.StartedAt
 
@@ -172,8 +171,8 @@ func filterByTime(flights []services.FlightDetails, start_time, end_time string)
 	return filteredFlights
 }
 
-func filterByCapacity(flights []services.FlightDetails) []services.FlightDetails {
-	filteredFlights := make([]services.FlightDetails, 0)
+func filterByCapacity(flights []services.FlightResponse) []services.FlightResponse {
+	filteredFlights := make([]services.FlightResponse, 0)
 	for _, flight := range flights {
 		if flight.EmptyCapacity > 0 {
 			filteredFlights = append(filteredFlights, flight)
@@ -183,7 +182,7 @@ func filterByCapacity(flights []services.FlightDetails) []services.FlightDetails
 	return filteredFlights
 }
 
-func sortByPrice(flights []services.FlightDetails, sortOrder string) []services.FlightDetails {
+func sortByPrice(flights []services.FlightResponse, sortOrder string) []services.FlightResponse {
 	sort.Slice(flights, func(i, j int) bool {
 		if sortOrder == "desc" {
 			return flights[i].Price > flights[j].Price
@@ -195,7 +194,7 @@ func sortByPrice(flights []services.FlightDetails, sortOrder string) []services.
 	return flights
 }
 
-func sortByTime(flights []services.FlightDetails, sortOrder string) []services.FlightDetails {
+func sortByTime(flights []services.FlightResponse, sortOrder string) []services.FlightResponse {
 	sort.Slice(flights, func(i, j int) bool {
 		if sortOrder == "desc" {
 			return flights[i].StartedAt.After(flights[j].StartedAt)
@@ -207,7 +206,7 @@ func sortByTime(flights []services.FlightDetails, sortOrder string) []services.F
 	return flights
 }
 
-func sortByDuration(flights []services.FlightDetails, sortOrder string) []services.FlightDetails {
+func sortByDuration(flights []services.FlightResponse, sortOrder string) []services.FlightResponse {
 	sort.Slice(flights, func(i, j int) bool {
 		durationA := flights[i].FinishedAt.Sub(flights[i].StartedAt)
 		durationB := flights[j].FinishedAt.Sub(flights[j].StartedAt)
