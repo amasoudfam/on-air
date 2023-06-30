@@ -16,22 +16,21 @@ type Passenger struct {
 }
 
 type CreateRequest struct {
-	NationalCode string `json:"nationalcode" binding:"required" validate:"required"`
-	FirstName    string `json:"firstname" binding:"required" validate:"required"`
-	LastName     string `json:"lastname" binding:"required" validate:"required"`
+	NationalCode string `json:"national_code" binding:"required" validate:"required"`
+	FirstName    string `json:"first_name" binding:"required" validate:"required"`
+	LastName     string `json:"last_name" binding:"required" validate:"required"`
 	Gender       string `json:"gender" binding:"required" validate:"required"`
 }
 
 func (p *Passenger) Create(ctx echo.Context) error {
 	userID, _ := strconv.Atoi(ctx.Get("id").(string))
 	var req CreateRequest
-
 	if err := ctx.Bind(&req); err != nil {
-		return ctx.NoContent(http.StatusBadRequest)
+		return ctx.JSON(http.StatusBadRequest, "Failed to bind")
 	}
 
 	if err := ctx.Validate(&req); err != nil {
-		return ctx.NoContent(http.StatusBadRequest)
+		return ctx.JSON(http.StatusBadRequest, "Invalid json key")
 	}
 
 	if !utils.ValidateNationalCode(req.NationalCode) {
@@ -59,9 +58,9 @@ func (p *Passenger) Create(ctx echo.Context) error {
 }
 
 type GetResponse struct {
-	NationalCode string `json:"nationalcode" binding:"required" validate:"required"`
-	FirstName    string `json:"firstname" binding:"required" validate:"required"`
-	LastName     string `json:"lastname" binding:"required" validate:"required"`
+	NationalCode string `json:"national_code" binding:"required" validate:"required"`
+	FirstName    string `json:"first_name" binding:"required" validate:"required"`
+	LastName     string `json:"last_name" binding:"required" validate:"required"`
 	Gender       string `json:"gender" binding:"required" validate:"required"`
 }
 
@@ -69,7 +68,7 @@ func (p *Passenger) Get(ctx echo.Context) error {
 	userID, _ := strconv.Atoi(ctx.Get("id").(string))
 	passengers, err := repository.GetPassengersByUserID(p.DB, userID)
 	if err != nil {
-		return ctx.NoContent(http.StatusInternalServerError)
+		return ctx.JSON(http.StatusInternalServerError, "Internal error")
 	}
 	var response []GetResponse
 	if len(*passengers) > 0 {

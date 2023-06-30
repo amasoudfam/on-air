@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"errors"
 	"on-air/models"
 
 	"gorm.io/gorm"
@@ -17,7 +18,7 @@ func CreatePassenger(db *gorm.DB, userID int, nationalCode, firstName, lastName,
 
 	result := db.Create(&passenger)
 	if err := result.Error; err != nil {
-		return nil, err
+		return nil, errors.New("internal error")
 	}
 
 	return &passenger, nil
@@ -26,7 +27,7 @@ func CreatePassenger(db *gorm.DB, userID int, nationalCode, firstName, lastName,
 func GetPassengersByUserID(db *gorm.DB, userID int) (*[]models.Passenger, error) {
 	var passengers []models.Passenger
 	if err := db.Find(&passengers, "user_id = ?", userID).Error; err != nil {
-		return nil, err
+		return nil, errors.New("internal error")
 	}
 
 	return &passengers, nil
