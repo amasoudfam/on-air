@@ -36,6 +36,9 @@ func SetupServer(cfg *config.Config, db *gorm.DB, redis *redis.Client, port stri
 		DB:  db,
 		JWT: &cfg.JWT,
 	}
+	//authMiddleware := &middlewares.Auth{
+	//	JWT: &cfg.JWT,
+	//}
 
 	e.POST("/auth/login", auth.Login)
 	e.POST("/auth/register", auth.Register)
