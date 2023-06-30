@@ -2,14 +2,13 @@ package server
 
 import (
 	"fmt"
-	"net/http"
-	"on-air/config"
-	"on-air/server/handlers"
-
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
+	"net/http"
+	"on-air/config"
+	"on-air/server/handlers"
 )
 
 type CustomValidator struct {
