@@ -8,7 +8,6 @@ require (
 	github.com/go-playground/validator/v10 v10.14.1
 	github.com/go-redis/redismock/v9 v9.0.3
 	github.com/golang-migrate/migrate/v4 v4.16.2
-	github.com/jarcoal/httpmock v1.3.0
 	github.com/labstack/echo/v4 v4.10.2
 	github.com/lib/pq v1.10.9
 	github.com/redis/go-redis/v9 v9.0.5

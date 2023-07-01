@@ -5,8 +5,10 @@ import (
 	"net/http"
 	"on-air/config"
 	"on-air/server/handlers"
+	"on-air/server/services"
 	"on-air/utils"
 
+	"github.com/eapache/go-resiliency/breaker"
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 	"github.com/redis/go-redis/v9"
@@ -44,8 +46,14 @@ func SetupServer(cfg *config.Config, db *gorm.DB, redis *redis.Client, port stri
 	e.POST("/auth/register", auth.Register)
 
 	Flight := &handlers.Flight{
-		Redis:         redis,
-		FlightService: &cfg.Services.Flights,
+		Redis: redis,
+		APIMockClient: &services.APIMockClient{
+			Client:  &http.Client{},
+			Breaker: &breaker.Breaker{},
+			BaseURL: cfg.Services.Flights.BaseURL,
+			Timeout: cfg.Services.Flights.Timeout,
+		},
+		Cache: &cfg.Redis,
 	}
 
 	e.GET("/flights", Flight.List)

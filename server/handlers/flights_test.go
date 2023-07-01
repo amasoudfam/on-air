@@ -2,13 +2,19 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"on-air/config"
 	"on-air/server/services"
 	"on-air/utils"
+	"reflect"
 	"testing"
 	"time"
 
+	"bou.ke/monkey"
+	"github.com/eapache/go-resiliency/breaker"
 	"github.com/go-playground/validator/v10"
 	"github.com/go-redis/redismock/v9"
 	"github.com/labstack/echo/v4"
@@ -44,16 +50,25 @@ func (suite *FlightHandlerTestSuite) SetupSuite() {
 	validator := validator.New()
 	validator.RegisterValidation("CustomTimeValidator", utils.CustomTimeValidator)
 	suite.e.Validator = &utils.CustomValidator{Validator: validator}
+	mockAPIClient := &services.APIMockClient{
+		Client:  &http.Client{},
+		Breaker: &breaker.Breaker{},
+		BaseURL: "http://example.com",
+		Timeout: time.Second,
+	}
+
 	suite.flight = &Flight{
-		Redis:         suite.redis,
-		APIMockClient: &services.APIMockClient{},
+		Redis:         mockRedis,
+		APIMockClient: mockAPIClient,
+		Cache: &config.Redis{
+			TTL: time.Minute * 10,
+		},
 	}
 }
 
 func (suite *FlightHandlerTestSuite) TestGetFlightsList_WithCache_Success() {
 	require := suite.Require()
 	expectedStatusCode := http.StatusOK
-	expectedMsg := "{\"flights\":[{\"number\":\"FL001\",\"airplane\":\"\",\"airline\":\"AirlineA\",\"price\":0,\"origin\":{\"id\":0,\"name\":\"\"},\"destination\":{\"id\":0,\"name\":\"\"},\"capacity\":0,\"empty_capacity\":0,\"started_at\":\"0001-01-01T00:00:00Z\",\"finished_at\":\"0001-01-01T00:00:00Z\"}]}\n"
 	flights := []services.FlightResponse{
 		{
 			Number:  "FL001",
@@ -61,58 +76,63 @@ func (suite *FlightHandlerTestSuite) TestGetFlightsList_WithCache_Success() {
 		},
 	}
 
-	queryString := "?org=Shiraz&dest=Esfahan&date=2023-06-27"
+	expectedRes := ListResponse{
+		Flights: flights,
+	}
+
+	expectedJSON, _ := json.Marshal(expectedRes)
+	expectedMsg := string(expectedJSON) + "\n"
+	queryString := "?origin=Shiraz&destination=Esfahan&date=2023-06-27"
 	jsonData, _ := json.Marshal(flights)
 	suite.mockRedis.ExpectGet("flights_Shiraz_Esfahan_2023-06-27").SetVal(string(jsonData))
-
 	res, err := suite.CallHandler(queryString)
 	require.NoError(err)
 	require.Equal(expectedMsg, res.Body.String())
 	require.Equal(expectedStatusCode, res.Code)
-
 	err = suite.mockRedis.ExpectationsWereMet()
 	require.NoError(err)
 }
 
-//func (suite *FlightHandlerTestSuite) TestGetFlightsList_WithoutCache_Success() {
-//	require := suite.Require()
-//	expectedStatusCode := http.StatusOK
-//	flights := []services.FlightResponse{
-//		{
-//			Number:  "FL001",
-//			Airline: "AirlineA",
-//		},
-//	}
-//
-//	// Set up the expectation on the Redis mock object
-//	suite.mockRedis.ExpectGet("flights_Shiraz_Esfahan_2023-06-27").RedisNil()
-//
-//	monkey.Patch(services.GetFlights, func(_ *redis.Client, _ *config.APIMock, _ string, _ context.Context, _ []services.FlightResponse, _, _, _ string) ([]services.FlightResponse, error) {
-//		return flights, nil
-//	})
-//	defer monkey.Unpatch(services.GetFlights)
-//
-//	jsonData, _ := json.Marshal(flights)
-//	suite.mockRedis.ExpectSet("flights_Shiraz_Esfahan_2023-06-27", jsonData, time.Minute*10).SetVal(string(jsonData))
-//
-//	queryParams := "?org=Shiraz&dest=Esfahan&date=2023-06-27"
-//	res, err := suite.CallHandler(queryParams)
-//	require.NoError(err)
-//	body, _ := io.ReadAll(res.Body)
-//	var response ListResponse
-//	err = json.Unmarshal(body, &response)
-//	require.NoError(err)
-//	require.Equal(flights, response.Flights)
-//
-//	require.NoError(err)
-//	require.Equal(expectedStatusCode, res.Code)
-//}
+func (suite *FlightHandlerTestSuite) TestGetFlightsList_WithoutCache_Success() {
+	require := suite.Require()
+	expectedStatusCode := http.StatusOK
+	flights := []services.FlightResponse{
+		{
+			Number:  "FL001",
+			Airline: "AirlineA",
+		},
+	}
+
+	suite.mockRedis.ExpectGet("flights_Shiraz_Esfahan_2023-06-27").RedisNil()
+	patch := monkey.PatchInstanceMethod(
+		reflect.TypeOf(suite.flight.APIMockClient),
+		"GetFlights",
+		func(_ *services.APIMockClient, origin, destination, date string) ([]services.FlightResponse, error) {
+			return flights, nil
+		},
+	)
+	defer patch.Unpatch()
+
+	jsonData, _ := json.Marshal(flights)
+	suite.mockRedis.ExpectSet("flights_Shiraz_Esfahan_2023-06-27", jsonData, time.Minute*10).SetVal(string(jsonData))
+
+	queryParams := "?origin=Shiraz&destination=Esfahan&date=2023-06-27"
+	res, err := suite.CallHandler(queryParams)
+	require.NoError(err)
+	body, _ := io.ReadAll(res.Body)
+	var response ListResponse
+	err = json.Unmarshal(body, &response)
+	require.NoError(err)
+	require.Equal(flights, response.Flights)
+
+	require.NoError(err)
+	require.Equal(expectedStatusCode, res.Code)
+}
 
 func (suite *FlightHandlerTestSuite) TestGetFlightsList_ParseReq_Failure() {
 	require := suite.Require()
 	expectedStatusCode := http.StatusBadRequest
-
-	queryString := "?org=Shiraz&dest=Esfahan&&date2023-06-27&empty_capacity=test"
+	queryString := "?origin=Shiraz&destination=Esfahan&&date2023-06-27&empty_capacity=test"
 	res, err := suite.CallHandler(queryString)
 	require.NoError(err)
 	require.Equal(expectedStatusCode, res.Code)
@@ -127,142 +147,172 @@ func (suite *FlightHandlerTestSuite) TestGetFlightsList_Validation_Failure() {
 	require.Equal(expectedStatusCode, res.Code)
 }
 
-//func (suite *FlightHandlerTestSuite) TestGetFlightsList_GetFromWebService_Failure() {
-//	require := suite.Require()
-//	expectedStatusCode := http.StatusInternalServerError
-//
-//	// Set up the expectation on the Redis mock object
-//	suite.mockRedis.ExpectGet("flights_Shiraz_Esfahan_2023-06-27").RedisNil()
-//
-//	monkey.Patch(services.GetFlights, func(_ *redis.Client, _ *config.APIMock, _ string, _ context.Context, _ []services.FlightResponse, _, _, _ string) ([]services.FlightResponse, error) {
-//		return nil, errors.New("error")
-//	})
-//	defer monkey.Unpatch(services.GetFlights)
-//
-//	queryParams := "?org=Shiraz&dest=Esfahan&date=2023-06-27"
-//	res, err := suite.CallHandler(queryParams)
-//	require.NoError(err)
-//	require.Equal(expectedStatusCode, res.Code)
-//}
-//
-//func (suite *FlightHandlerTestSuite) TestGetFlightsList_FilterByAirline() {
-//	require := suite.Require()
-//	expectedStatusCode := http.StatusOK
-//	flights := []services.FlightResponse{}
-//
-//	suite.mockRedis.ExpectGet("flights_Shiraz_Esfahan_2023-06-27").RedisNil()
-//	monkey.Patch(services.GetFlights, func(_ *redis.Client, _ *config.APIMock, _ string, _ context.Context, _ []services.FlightResponse, _, _, _ string) ([]services.FlightResponse, error) {
-//		return flights, nil
-//	})
-//	defer monkey.Unpatch(services.GetFlights)
-//
-//	queryParams := "?org=Shiraz&dest=Esfahan&date=2023-06-27&airline=AirlineA"
-//	res, err := suite.CallHandler(queryParams)
-//	require.NoError(err)
-//	require.Equal(expectedStatusCode, res.Code)
-//}
-//
-//func (suite *FlightHandlerTestSuite) TestGetFlightsList_FilterByAirplane() {
-//	require := suite.Require()
-//	expectedStatusCode := http.StatusOK
-//	flights := []services.FlightResponse{}
-//
-//	suite.mockRedis.ExpectGet("flights_Shiraz_Esfahan_2023-06-27").RedisNil()
-//	monkey.Patch(services.GetFlights, func(_ *redis.Client, _ *config.APIMock, _ string, _ context.Context, _ []services.FlightResponse, _, _, _ string) ([]services.FlightResponse, error) {
-//		return flights, nil
-//	})
-//	defer monkey.Unpatch(services.GetFlights)
-//
-//	queryParams := "?org=Shiraz&dest=Esfahan&date=2023-06-27&airplane=Airbus428"
-//	res, err := suite.CallHandler(queryParams)
-//	require.NoError(err)
-//	require.Equal(expectedStatusCode, res.Code)
-//}
-//
-//func (suite *FlightHandlerTestSuite) TestGetFlightsList_FilterTime() {
-//	require := suite.Require()
-//	expectedStatusCode := http.StatusOK
-//	flights := []services.FlightResponse{}
-//
-//	suite.mockRedis.ExpectGet("flights_Shiraz_Esfahan_2023-06-27").RedisNil()
-//	monkey.Patch(services.GetFlights, func(_ *redis.Client, _ *config.APIMock, _ string, _ context.Context, _ []services.FlightResponse, _, _, _ string) ([]services.FlightResponse, error) {
-//		return flights, nil
-//	})
-//	defer monkey.Unpatch(services.GetFlights)
-//
-//	queryParams := "?org=Shiraz&dest=Esfahan&date=2023-06-27&start_time:10:30&end_time:11:30"
-//	res, err := suite.CallHandler(queryParams)
-//	require.NoError(err)
-//	require.Equal(expectedStatusCode, res.Code)
-//}
-//
-//func (suite *FlightHandlerTestSuite) TestGetFlightsList_FilterByCapacity() {
-//	require := suite.Require()
-//	expectedStatusCode := http.StatusOK
-//	flights := []services.FlightResponse{}
-//
-//	suite.mockRedis.ExpectGet("flights_Shiraz_Esfahan_2023-06-27").RedisNil()
-//	monkey.Patch(services.GetFlights, func(_ *redis.Client, _ *config.APIMock, _ string, _ context.Context, _ []services.FlightResponse, _, _, _ string) ([]services.FlightResponse, error) {
-//		return flights, nil
-//	})
-//	defer monkey.Unpatch(services.GetFlights)
-//
-//	queryParams := "?org=Shiraz&dest=Esfahan&date=2023-06-27&empty_capacity=true"
-//	res, err := suite.CallHandler(queryParams)
-//	require.NoError(err)
-//	require.Equal(expectedStatusCode, res.Code)
-//}
-//
-//func (suite *FlightHandlerTestSuite) TestGetFlightsList_SortByPrice() {
-//	require := suite.Require()
-//	expectedStatusCode := http.StatusOK
-//	flights := []services.FlightResponse{}
-//
-//	suite.mockRedis.ExpectGet("flights_Shiraz_Esfahan_2023-06-27").RedisNil()
-//	monkey.Patch(services.GetFlights, func(_ *redis.Client, _ *config.APIMock, _ string, _ context.Context, _ []services.FlightResponse, _, _, _ string) ([]services.FlightResponse, error) {
-//		return flights, nil
-//	})
-//	defer monkey.Unpatch(services.GetFlights)
-//
-//	queryParams := "?org=Shiraz&dest=Esfahan&date=2023-06-27&order_by=price"
-//	res, err := suite.CallHandler(queryParams)
-//	require.NoError(err)
-//	require.Equal(expectedStatusCode, res.Code)
-//}
-//
-//func (suite *FlightHandlerTestSuite) TestGetFlightsList_SortByTime() {
-//	require := suite.Require()
-//	expectedStatusCode := http.StatusOK
-//	flights := []services.FlightResponse{}
-//
-//	suite.mockRedis.ExpectGet("flights_Shiraz_Esfahan_2023-06-27").RedisNil()
-//	monkey.Patch(services.GetFlights, func(_ *redis.Client, _ *config.APIMock, _ string, _ context.Context, _ []services.FlightResponse, _, _, _ string) ([]services.FlightResponse, error) {
-//		return flights, nil
-//	})
-//	defer monkey.Unpatch(services.GetFlights)
-//
-//	queryParams := "?org=Shiraz&dest=Esfahan&date=2023-06-27&order_by=time"
-//	res, err := suite.CallHandler(queryParams)
-//	require.NoError(err)
-//	require.Equal(expectedStatusCode, res.Code)
-//}
-//
-//func (suite *FlightHandlerTestSuite) TestGetFlightsList_SortByDuration() {
-//	require := suite.Require()
-//	expectedStatusCode := http.StatusOK
-//	flights := []services.FlightResponse{}
-//
-//	suite.mockRedis.ExpectGet("flights_Shiraz_Esfahan_2023-06-27").RedisNil()
-//	monkey.Patch(services.GetFlights, func(_ *redis.Client, _ *config.APIMock, _ string, _ context.Context, _ []services.FlightResponse, _, _, _ string) ([]services.FlightResponse, error) {
-//		return flights, nil
-//	})
-//	defer monkey.Unpatch(services.GetFlights)
-//
-//	queryParams := "?org=Shiraz&dest=Esfahan&date=2023-06-27&order_by=duration"
-//	res, err := suite.CallHandler(queryParams)
-//	require.NoError(err)
-//	require.Equal(expectedStatusCode, res.Code)
-//}
+func (suite *FlightHandlerTestSuite) TestGetFlightsList_GetFromWebService_Failure() {
+	require := suite.Require()
+	expectedStatusCode := http.StatusInternalServerError
+
+	suite.mockRedis.ExpectGet("flights_Shiraz_Esfahan_2023-06-27").RedisNil()
+	patch := monkey.PatchInstanceMethod(
+		reflect.TypeOf(suite.flight.APIMockClient),
+		"GetFlights",
+		func(_ *services.APIMockClient, origin, destination, date string) ([]services.FlightResponse, error) {
+			return nil, errors.New("error")
+		},
+	)
+	defer patch.Unpatch()
+
+	queryParams := "?origin=Shiraz&destination=Esfahan&date=2023-06-27"
+	res, err := suite.CallHandler(queryParams)
+	require.NoError(err)
+	require.Equal(expectedStatusCode, res.Code)
+}
+
+func (suite *FlightHandlerTestSuite) TestGetFlightsList_FilterByAirline() {
+	require := suite.Require()
+	expectedStatusCode := http.StatusOK
+	flights := []services.FlightResponse{}
+
+	suite.mockRedis.ExpectGet("flights_Shiraz_Esfahan_2023-06-27").RedisNil()
+	patch := monkey.PatchInstanceMethod(
+		reflect.TypeOf(suite.flight.APIMockClient),
+		"GetFlights",
+		func(_ *services.APIMockClient, origin, destination, date string) ([]services.FlightResponse, error) {
+			return flights, nil
+		},
+	)
+	defer patch.Unpatch()
+
+	queryParams := "?origin=Shiraz&destination=Esfahan&date=2023-06-27&airline=AirlineA"
+	res, err := suite.CallHandler(queryParams)
+	require.NoError(err)
+	require.Equal(expectedStatusCode, res.Code)
+}
+
+func (suite *FlightHandlerTestSuite) TestGetFlightsList_FilterByAirplane() {
+	require := suite.Require()
+	expectedStatusCode := http.StatusOK
+	flights := []services.FlightResponse{}
+
+	suite.mockRedis.ExpectGet("flights_Shiraz_Esfahan_2023-06-27").RedisNil()
+	patch := monkey.PatchInstanceMethod(
+		reflect.TypeOf(suite.flight.APIMockClient),
+		"GetFlights",
+		func(_ *services.APIMockClient, origin, destination, date string) ([]services.FlightResponse, error) {
+			return flights, nil
+		},
+	)
+	defer patch.Unpatch()
+
+	queryParams := "?origin=Shiraz&destination=Esfahan&date=2023-06-27&airplane=Airbus428"
+	res, err := suite.CallHandler(queryParams)
+	require.NoError(err)
+	require.Equal(expectedStatusCode, res.Code)
+}
+
+func (suite *FlightHandlerTestSuite) TestGetFlightsList_FilterTime() {
+	require := suite.Require()
+	expectedStatusCode := http.StatusOK
+	flights := []services.FlightResponse{}
+
+	suite.mockRedis.ExpectGet("flights_Shiraz_Esfahan_2023-06-27").RedisNil()
+	patch := monkey.PatchInstanceMethod(
+		reflect.TypeOf(suite.flight.APIMockClient),
+		"GetFlights",
+		func(_ *services.APIMockClient, origin, destination, date string) ([]services.FlightResponse, error) {
+			return flights, nil
+		},
+	)
+	defer patch.Unpatch()
+
+	queryParams := "?origin=Shiraz&destination=Esfahan&date=2023-06-27&start_time:10:30&end_time:11:30"
+	res, err := suite.CallHandler(queryParams)
+	require.NoError(err)
+	require.Equal(expectedStatusCode, res.Code)
+}
+
+func (suite *FlightHandlerTestSuite) TestGetFlightsList_FilterByCapacity() {
+	require := suite.Require()
+	expectedStatusCode := http.StatusOK
+	flights := []services.FlightResponse{}
+
+	suite.mockRedis.ExpectGet("flights_Shiraz_Esfahan_2023-06-27").RedisNil()
+	patch := monkey.PatchInstanceMethod(
+		reflect.TypeOf(suite.flight.APIMockClient),
+		"GetFlights",
+		func(_ *services.APIMockClient, origin, destination, date string) ([]services.FlightResponse, error) {
+			return flights, nil
+		},
+	)
+	defer patch.Unpatch()
+
+	queryParams := "?origin=Shiraz&destination=Esfahan&date=2023-06-27&empty_capacity=true"
+	res, err := suite.CallHandler(queryParams)
+	require.NoError(err)
+	require.Equal(expectedStatusCode, res.Code)
+}
+
+func (suite *FlightHandlerTestSuite) TestGetFlightsList_SortByPrice() {
+	require := suite.Require()
+	expectedStatusCode := http.StatusOK
+	flights := []services.FlightResponse{}
+
+	suite.mockRedis.ExpectGet("flights_Shiraz_Esfahan_2023-06-27").RedisNil()
+	patch := monkey.PatchInstanceMethod(
+		reflect.TypeOf(suite.flight.APIMockClient),
+		"GetFlights",
+		func(_ *services.APIMockClient, origin, destination, date string) ([]services.FlightResponse, error) {
+			return flights, nil
+		},
+	)
+	defer patch.Unpatch()
+
+	queryParams := "?origin=Shiraz&destination=Esfahan&date=2023-06-27&order_by=price"
+	res, err := suite.CallHandler(queryParams)
+	require.NoError(err)
+	require.Equal(expectedStatusCode, res.Code)
+}
+
+func (suite *FlightHandlerTestSuite) TestGetFlightsList_SortByTime() {
+	require := suite.Require()
+	expectedStatusCode := http.StatusOK
+	flights := []services.FlightResponse{}
+
+	suite.mockRedis.ExpectGet("flights_Shiraz_Esfahan_2023-06-27").RedisNil()
+	patch := monkey.PatchInstanceMethod(
+		reflect.TypeOf(suite.flight.APIMockClient),
+		"GetFlights",
+		func(_ *services.APIMockClient, origin, destination, date string) ([]services.FlightResponse, error) {
+			return flights, nil
+		},
+	)
+	defer patch.Unpatch()
+
+	queryParams := "?origin=Shiraz&destination=Esfahan&date=2023-06-27&order_by=time"
+	res, err := suite.CallHandler(queryParams)
+	require.NoError(err)
+	require.Equal(expectedStatusCode, res.Code)
+}
+
+func (suite *FlightHandlerTestSuite) TestGetFlightsList_SortByDuration() {
+	require := suite.Require()
+	expectedStatusCode := http.StatusOK
+	flights := []services.FlightResponse{}
+
+	suite.mockRedis.ExpectGet("flights_Shiraz_Esfahan_2023-06-27").RedisNil()
+	patch := monkey.PatchInstanceMethod(
+		reflect.TypeOf(suite.flight.APIMockClient),
+		"GetFlights",
+		func(_ *services.APIMockClient, origin, destination, date string) ([]services.FlightResponse, error) {
+			return flights, nil
+		},
+	)
+	defer patch.Unpatch()
+
+	queryParams := "?origin=Shiraz&destination=Esfahan&date=2023-06-27&order_by=duration"
+	res, err := suite.CallHandler(queryParams)
+	require.NoError(err)
+	require.Equal(expectedStatusCode, res.Code)
+}
 
 func (suite *FlightHandlerTestSuite) TestFilterByAirline() {
 	require := suite.Require()

@@ -23,8 +23,8 @@ type FlightResponse struct {
 	Airplane      string    `json:"airplane"`
 	Airline       string    `json:"airline"`
 	Price         int       `json:"price"`
-	Origin        City      `json:"origin"`
-	Destination   City      `json:"destination"`
+	Origin        string    `json:"origin"`
+	Destination   string    `json:"destination"`
 	Capacity      int       `json:"capacity"`
 	EmptyCapacity int       `json:"empty_capacity"`
 	StartedAt     time.Time `json:"started_at"`
@@ -37,7 +37,7 @@ type City struct {
 }
 
 func (c *APIMockClient) GetFlights(origin, destination, date string) ([]FlightResponse, error) {
-	url := c.BaseURL + "/flights" + fmt.Sprintf("?departure_city=%s&arrival_city%s&date=%s", origin, destination, date)
+	url := c.BaseURL + "/flights" + fmt.Sprintf("?origin=%s&destination=%s&date=%s", origin, destination, date)
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -55,23 +55,23 @@ func (c *APIMockClient) GetFlights(origin, destination, date string) ([]FlightRe
 
 		response, err := c.Client.Do(req)
 		if err != nil {
-			return fmt.Errorf("apimock_get_flights: request failed, error: %w", err)
+			return fmt.Errorf("api_mock_get_flights: request failed, error: %w", err)
 		}
 
 		defer response.Body.Close()
 
 		responseBody, err := ioutil.ReadAll(response.Body)
 		if err != nil {
-			return fmt.Errorf("apimock_get_flights: read response body failed, error: %w", err)
+			return fmt.Errorf("api_mock_get_flights: read response body failed, error: %w", err)
 		}
 
 		if response.StatusCode != http.StatusOK {
-			return fmt.Errorf("apimock_get_flights: unhandeled response, status: %d, response: %s", response.StatusCode, responseBody)
+			return fmt.Errorf("api_mock_get_flights: unhandled response, status: %d, response: %s", response.StatusCode, responseBody)
 		}
 
 		err = json.Unmarshal(responseBody, &resp)
 		if err != nil {
-			return fmt.Errorf("apimock_get_flights: parse response body failed, response: %s, error: %w", responseBody, err)
+			return fmt.Errorf("api_mock_get_flights: parse response body failed, response: %s, error: %w", responseBody, err)
 		}
 
 		return nil

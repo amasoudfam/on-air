@@ -35,8 +35,8 @@ type FlightDetails struct {
 }
 
 type ListRequest struct {
-	Origin        string `query:"org" validate:"required"`
-	Destination   string `query:"dest" validate:"required"`
+	Origin        string `query:"origin" validate:"required"`
+	Destination   string `query:"destination" validate:"required"`
 	Date          string `query:"date" validate:"required,datetime=2006-01-02"`
 	Airline       string `query:"airline"`
 	Airplane      string `query:"airplane"`
