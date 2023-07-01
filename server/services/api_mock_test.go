@@ -1,32 +1,34 @@
 package services
 
 import (
-	"context"
 	"encoding/json"
-	"log"
-	"on-air/config"
+	"errors"
 	"time"
 
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
-	"github.com/go-redis/redismock/v9"
+	"github.com/eapache/go-resiliency/breaker"
 	"github.com/jarcoal/httpmock"
-	"github.com/redis/go-redis/v9"
-	"github.com/stretchr/testify/assert"
+
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
 type FlightServiceTestSuite struct {
 	suite.Suite
-	mockRedis redismock.ClientMock
-	redis     *redis.Client
+	APIMockClient APIMockClient
 }
 
 func (suite *FlightServiceTestSuite) SetupSuite() {
-	mockRedis, mock := redismock.NewClientMock()
-	suite.redis = mockRedis
-	suite.mockRedis = mock
+
+	suite.APIMockClient = APIMockClient{
+		Client:  &http.Client{},
+		Breaker: &breaker.Breaker{},
+		BaseURL: "http://example.com",
+		Timeout: 10 * time.Second,
+	}
 }
 
 type ListResponse struct {
@@ -34,95 +36,72 @@ type ListResponse struct {
 }
 
 func (suite *FlightServiceTestSuite) TestGetFlightsListFromApi_Success() {
-	data := []FlightResponse{
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(suite.T(), "/flights?origin=origin&destination=destination&date=date", r.URL.String())
+		flights := []FlightResponse{
+			{
+				Number:        "FL001",
+				Airplane:      "AirplaneA",
+				Airline:       "AirlineA",
+				Price:         100,
+				Origin:        "OriginA",
+				Destination:   "DestinationA",
+				Capacity:      200,
+				EmptyCapacity: 50,
+				StartedAt:     time.Date(2023, 7, 1, 10, 0, 0, 0, time.UTC),
+				FinishedAt:    time.Date(2023, 7, 1, 12, 0, 0, 0, time.UTC),
+			},
+		}
+		respJSON, _ := json.Marshal(flights)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write(respJSON)
+	}))
+	defer mockServer.Close()
+	suite.APIMockClient.BaseURL = mockServer.URL
+	expectedFlights := []FlightResponse{
 		{
-			Number:  "FL001",
-			Airline: "AirlineA",
+			Number:        "FL001",
+			Airplane:      "AirplaneA",
+			Airline:       "AirlineA",
+			Price:         100,
+			Origin:        "OriginA",
+			Destination:   "DestinationA",
+			Capacity:      200,
+			EmptyCapacity: 50,
+			StartedAt:     time.Date(2023, 7, 1, 10, 0, 0, 0, time.UTC),
+			FinishedAt:    time.Date(2023, 7, 1, 12, 0, 0, 0, time.UTC),
 		},
 	}
-
-	jsonData, _ := json.Marshal(data)
-	suite.mockRedis.ExpectSet("redis_key", jsonData, time.Minute*10).SetVal(string(jsonData))
-	httpmock.Activate()
-	defer httpmock.DeactivateAndReset()
-
-	expectedURL := "https://api.example.com/flights?org=origin&dest=destination&date=date"
-	response := ListResponse{
-		Flights: data,
-	}
-	res, _ := json.Marshal(response)
-	expectedResponse := string(res)
-
-	httpmock.RegisterResponder("GET", expectedURL, httpmock.NewStringResponder(http.StatusOK, expectedResponse))
-
-	flightService := &config.APIMock{
-		BaseURL: "https://api.example.com",
-	}
-
-	flightsList := []FlightResponse{}
-	flights, err := GetFlights(suite.redis, flightService, "redis_key", context.TODO(), flightsList, "origin", "destination", "date")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	assert.NoError(suite.T(), err)
-	assert.NotNil(suite.T(), flights)
-	assert.NotEmpty(suite.T(), flights)
-
-	err = suite.mockRedis.ExpectationsWereMet()
-	assert.NoError(suite.T(), err)
+	flights, err := suite.APIMockClient.GetFlights("origin", "destination", "date")
+	require.NoError(suite.T(), err)
+	require.NotNil(suite.T(), flights)
+	require.Len(suite.T(), flights, 1)
+	require.Equal(suite.T(), expectedFlights, flights)
 }
 
-func (suite *FlightServiceTestSuite) TestGetFlightsListFromApi_webService_Failure() {
-	data := []FlightResponse{
-		{
-			Number:  "FL001",
-			Airline: "AirlineA",
-		},
-	}
+type ErrorTransport struct{}
 
-	jsonData, _ := json.Marshal(data)
-	suite.mockRedis.ExpectSet("redis_key", jsonData, time.Minute*10).SetVal(string(jsonData))
-	httpmock.Activate()
-	defer httpmock.DeactivateAndReset()
-
-	expectedURL := "https://api.example.com/flights?org=origin&dest=destination&date=date"
-	httpmock.RegisterResponder("GET", expectedURL, httpmock.NewStringResponder(http.StatusInternalServerError, "Internal Server Error"))
-
-	flightService := &config.APIMock{
-		BaseURL: "https://api2.example.com",
-	}
-
-	flightsList := []FlightResponse{}
-	_, err := GetFlights(suite.redis, flightService, "redis_key", context.TODO(), flightsList, "origin", "destination", "date")
-
-	assert.NotNil(suite.T(), err)
+func (t *ErrorTransport) RoundTrip(*http.Request) (*http.Response, error) {
+	return nil, errors.New("custom error")
 }
 
-func (suite *FlightServiceTestSuite) TestGetFlightsListFromApi_webService_500_Failure() {
-	data := []FlightResponse{
-		{
-			Number:  "FL001",
-			Airline: "AirlineA",
-		},
-	}
-
-	jsonData, _ := json.Marshal(data)
-	suite.mockRedis.ExpectSet("redis_key", jsonData, time.Minute*10).SetVal(string(jsonData))
+func (suite *FlightServiceTestSuite) TestGetFlightsListFromApi_Unhandled_Response_Failure() {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 
-	expectedURL := "https://api.example.com/flights?org=origin&dest=destination&date=date"
+	expectedURL := "http://example.com/flights?origin=origin&destination=destination&date=date"
 	httpmock.RegisterResponder("GET", expectedURL, httpmock.NewStringResponder(http.StatusInternalServerError, "Internal Server Error"))
 
-	flightService := &config.APIMock{
-		BaseURL: "https://api.example.com",
-	}
+	flights, err := suite.APIMockClient.GetFlights("origin", "destination", "date")
+	require.NotNil(suite.T(), err)
+	require.Nil(suite.T(), flights)
+}
 
-	flightsList := []FlightResponse{}
-	_, err := GetFlights(suite.redis, flightService, "redis_key", context.TODO(), flightsList, "origin", "destination", "date")
-
-	assert.EqualError(suite.T(), err, "web service returned an error")
+func (suite *FlightServiceTestSuite) TestGetFlightsListFromApi_Request_Failure() {
+	flights, err := suite.APIMockClient.GetFlights("origin", "destination", "date")
+	require.NotNil(suite.T(), err)
+	require.Nil(suite.T(), flights)
 }
 
 func TestFlightService(t *testing.T) {
