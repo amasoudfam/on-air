@@ -67,9 +67,11 @@ type GetResponse struct {
 func (p *Passenger) Get(ctx echo.Context) error {
 	userID, _ := strconv.Atoi(ctx.Get("id").(string))
 	passengers, err := repository.GetPassengersByUserID(p.DB, userID)
+
 	if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, "Internal error")
 	}
+
 	var response []GetResponse
 	if len(*passengers) > 0 {
 		response = make([]GetResponse, 0, len(*passengers))

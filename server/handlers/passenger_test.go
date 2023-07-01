@@ -15,8 +15,8 @@ import (
 	"bou.ke/monkey"
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/go-playground/validator/v10"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/labstack/echo/v4"
-	"github.com/lib/pq"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -160,7 +160,7 @@ func (suite *PassengerTestSuite) TestCreatePassenger_CreatePassenger_Failure() {
 
 func (suite *PassengerTestSuite) TestCreatePassenger_CreatePassenger_Duplicate_Failure() {
 	require := suite.Require()
-	expectedStatusCode := http.StatusInternalServerError
+	expectedStatusCode := http.StatusBadRequest
 	expectedBody := "\"Passenger exists\"\n"
 
 	suite.e.Binder = &MockBinder{}
@@ -174,7 +174,7 @@ func (suite *PassengerTestSuite) TestCreatePassenger_CreatePassenger_Duplicate_F
 	})
 	defer monkey.Unpatch(utils.ValidateNationalCode)
 
-	pgErr := &pq.Error{
+	pgErr := &pgconn.PgError{
 		Message: "Passenger exists",
 		Code:    "23505",
 	}
@@ -199,11 +199,14 @@ func (suite *PassengerTestSuite) TestCreatePassenger_CreatePassenger_Duplicate_F
 func (suite *PassengerTestSuite) TestCreatePassenger_InvalidBody_Failure() {
 	require := suite.Require()
 	expectedStatusCode := http.StatusBadRequest
+	expectedBody := "\"Failed to bind\"\n"
 
 	requestBody := `{"national_code: "1000011111", "first_name": "name", "last_name": "lname", "gender": "f"}`
 
 	res, err := suite.CallCreateHandler(requestBody)
+	body, _ := io.ReadAll(res.Body)
 	require.NoError(err)
+	require.Equal(expectedBody, string(body))
 	require.Equal(expectedStatusCode, res.Code)
 }
 
@@ -225,9 +228,12 @@ func (suite *PassengerTestSuite) TestCreatePassenger_InvalidKey_Failure() {
 	require := suite.Require()
 	expectedStatusCode := http.StatusBadRequest
 	expectedBody := "\"Invalid json key\"\n"
+
 	suite.e.Binder = &MockBinder{}
 	defer suite.reset_Binder()
+
 	requestBody := `{"national_code": "1000011111", "firstname": "name", "last_name": "lname", "gender": "f"}`
+
 	res, err := suite.CallCreateHandler(requestBody)
 	body, _ := io.ReadAll(res.Body)
 	require.Equal(expectedBody, string(body))
@@ -260,6 +266,7 @@ func (suite *PassengerTestSuite) TestGetPassenger_Success() {
 	expectedStatusCode := http.StatusOK
 	expectedBody := "[{\"national_code\":\"1000011111\",\"first_name\":\"name\",\"last_name\":\"lname\",\"gender\":\"f\"}"
 	expectedBody += ",{\"national_code\":\"1002011111\",\"first_name\":\"fname\",\"last_name\":\"lname\",\"gender\":\"m\"}]\n"
+
 	mockPassenger := suite.sqlMock.NewRows(
 		[]string{
 			"national_code", "first_name", "last_name", "gender",
