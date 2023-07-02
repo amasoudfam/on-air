@@ -1,8 +1,9 @@
 package utils
 
 import (
-	"github.com/stretchr/testify/suite"
 	"testing"
+
+	"github.com/stretchr/testify/suite"
 )
 
 type NationalCodeTestSuite struct {
@@ -27,8 +28,23 @@ func (suite *NationalCodeTestSuite) TestValidateNationalCode() {
 			false,
 		},
 		{
+			"Invalid national code checksum character",
+			"002525292a",
+			false,
+		},
+		{
+			"Invalid national code character",
+			"a025252920",
+			false,
+		},
+		{
 			"Invalid national code",
-			"123456789",
+			"1234567890",
+			false,
+		},
+		{
+			"Empty national code",
+			"",
 			false,
 		},
 	}
