@@ -104,6 +104,134 @@ func (suite *FlightServiceTestSuite) TestGetFlightsListFromApi_Request_Failure()
 	require.Nil(suite.T(), flights)
 }
 
+func (suite *FlightServiceTestSuite) TestGetFlightsCitiesFromApi_Success() {
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(suite.T(), "/flights/cities", r.URL.String())
+		cities := []string{"Shiraz", "Esfahan", "Tehran", "Tabriz"}
+		respJSON, _ := json.Marshal(cities)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write(respJSON)
+	}))
+	defer mockServer.Close()
+	suite.APIMockClient.BaseURL = mockServer.URL
+	expectedCities := []string{"Shiraz", "Esfahan", "Tehran", "Tabriz"}
+	cities, err := suite.APIMockClient.GetCities()
+	require.NoError(suite.T(), err)
+	require.NotNil(suite.T(), cities)
+	require.Len(suite.T(), cities, 4)
+	require.Equal(suite.T(), expectedCities, cities)
+}
+
+func (suite *FlightServiceTestSuite) TestGetFlightsDatesFromApi_Success() {
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(suite.T(), "/flights/dates", r.URL.String())
+		cities := []string{"2023-03-07", "2023-03-08", "2023-03-10", "2023-03-11", "2023-03-20"}
+		respJSON, _ := json.Marshal(cities)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write(respJSON)
+	}))
+	defer mockServer.Close()
+	suite.APIMockClient.BaseURL = mockServer.URL
+	expectedDates := []string{"2023-03-07", "2023-03-08", "2023-03-10", "2023-03-11", "2023-03-20"}
+	dates, err := suite.APIMockClient.GetDates()
+	require.NoError(suite.T(), err)
+	require.NotNil(suite.T(), dates)
+	require.Len(suite.T(), dates, 5)
+	require.Equal(suite.T(), expectedDates, dates)
+}
+
+func (suite *FlightServiceTestSuite) TestGetFlightFromApi_Success() {
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(suite.T(), "/flights/FL001", r.URL.String())
+		cities := FlightResponse{
+			Number:        "FL001",
+			Airplane:      "AirplaneA",
+			Airline:       "AirlineA",
+			Price:         100,
+			Origin:        "OriginA",
+			Destination:   "DestinationA",
+			Capacity:      200,
+			EmptyCapacity: 50,
+			StartedAt:     time.Date(2023, 7, 1, 10, 0, 0, 0, time.UTC),
+			FinishedAt:    time.Date(2023, 7, 1, 12, 0, 0, 0, time.UTC),
+		}
+		respJSON, _ := json.Marshal(cities)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write(respJSON)
+	}))
+	defer mockServer.Close()
+	suite.APIMockClient.BaseURL = mockServer.URL
+	expectedFlight := FlightResponse{
+		Number:        "FL001",
+		Airplane:      "AirplaneA",
+		Airline:       "AirlineA",
+		Price:         100,
+		Origin:        "OriginA",
+		Destination:   "DestinationA",
+		Capacity:      200,
+		EmptyCapacity: 50,
+		StartedAt:     time.Date(2023, 7, 1, 10, 0, 0, 0, time.UTC),
+		FinishedAt:    time.Date(2023, 7, 1, 12, 0, 0, 0, time.UTC),
+	}
+	flight, err := suite.APIMockClient.GetFlight("FL001")
+	require.NoError(suite.T(), err)
+	require.NotNil(suite.T(), flight)
+	require.Equal(suite.T(), &expectedFlight, flight)
+}
+
+func (suite *FlightServiceTestSuite) TestGetFlightReserveFromApi_Success() {
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+		require.Equal(suite.T(), "/flights/reserve", r.URL.String())
+		cities := ReserveResponse{
+			Status:  true,
+			Message: "Flight reservation was successful.",
+		}
+		respJSON, _ := json.Marshal(cities)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write(respJSON)
+	}))
+	defer mockServer.Close()
+	suite.APIMockClient.BaseURL = mockServer.URL
+	expectedRes := true
+	reserveRes, err := suite.APIMockClient.Reserve("FL001")
+	require.NoError(suite.T(), err)
+	require.NotNil(suite.T(), reserveRes)
+	require.Equal(suite.T(), expectedRes, reserveRes)
+}
+
+func (suite *FlightServiceTestSuite) TestGetFlightRefundFromApi_Success() {
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+		require.Equal(suite.T(), "/flights/refund", r.URL.String())
+		cities := RefundResponse{
+			Status:  true,
+			Message: "Flight refund failed.",
+		}
+		respJSON, _ := json.Marshal(cities)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write(respJSON)
+	}))
+	defer mockServer.Close()
+	suite.APIMockClient.BaseURL = mockServer.URL
+	expectedFlights := true
+	reserveRes, err := suite.APIMockClient.Refund("FL001")
+	require.NoError(suite.T(), err)
+	require.NotNil(suite.T(), reserveRes)
+	require.Equal(suite.T(), expectedFlights, reserveRes)
+}
+
 func TestFlightService(t *testing.T) {
 	suite.Run(t, new(FlightServiceTestSuite))
 }
