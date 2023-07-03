@@ -7,7 +7,7 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/suite"
-	"gorm.io/driver/mysql"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
@@ -29,9 +29,9 @@ func (suite *UserTestSuite) SetupSuite() {
 		log.Fatal(err)
 	}
 
-	suite.dbMock, err = gorm.Open(mysql.New(mysql.Config{
-		Conn:                      mockDB,
-		SkipInitializeWithVersion: true,
+	suite.dbMock, err = gorm.Open(postgres.New(postgres.Config{
+		Conn:       mockDB,
+		DriverName: "postgres",
 	}))
 
 	if err != nil {
@@ -43,21 +43,21 @@ func (suite *UserTestSuite) SetupSuite() {
 
 func (suite *UserTestSuite) TestUser_RegisterUser_Success() {
 	require := suite.Require()
+
 	suite.sqlMock.ExpectBegin()
-	suite.sqlMock.ExpectExec("INSERT INTO `users`").
-		WillReturnResult(sqlmock.NewResult(1, 1))
+	suite.sqlMock.ExpectQuery(`INSERT`).WillReturnRows(sqlmock.NewRows([]string{"id"}))
 	suite.sqlMock.ExpectCommit()
 
 	_, err := RegisterUser(suite.dbMock, UserEmail, UserPassword)
 	require.NoError(err)
 }
 
-func (suite *UserTestSuite) TestPassenger_RegisterUser_Failure() {
+func (suite *UserTestSuite) TestUser_RegisterUser_Failure() {
 	require := suite.Require()
 
 	suite.sqlMock.ExpectBegin()
-	suite.sqlMock.ExpectExec("INSERT INTO `users`").
-		WillReturnError(errors.New(""))
+	suite.sqlMock.ExpectQuery(`INSERT`).
+		WillReturnError(errors.New("user not found"))
 	suite.sqlMock.ExpectRollback()
 
 	res, _ := RegisterUser(suite.dbMock, UserEmail, UserPassword)
@@ -67,11 +67,12 @@ func (suite *UserTestSuite) TestPassenger_RegisterUser_Failure() {
 func (suite *UserTestSuite) TestUser_GetUserByEmail_Success() {
 	require := suite.Require()
 
-	mockRow := suite.sqlMock.NewRows(
+	mockUser := suite.sqlMock.NewRows(
 		[]string{
 			"id", "email", "password",
-		}).AddRow(UserID, UserEmail, UserPassword)
-	suite.sqlMock.ExpectQuery("SELECT (.+) FROM `users` WHERE email = ?").WithArgs(UserEmail).WillReturnRows(mockRow)
+		}).AddRow(UserId, UserEmail, UserPassword)
+
+	suite.sqlMock.ExpectQuery(`SELECT`).WillReturnRows(mockUser)
 
 	_, err := GetUserByEmail(suite.dbMock, UserEmail)
 	require.NoError(err)
@@ -80,7 +81,7 @@ func (suite *UserTestSuite) TestUser_GetUserByEmail_Success() {
 func (suite *UserTestSuite) TestUser_GetUserByEmail_Failure() {
 	require := suite.Require()
 
-	suite.sqlMock.ExpectQuery("SELECT (.+) FROM `users` WHERE email = ?").WithArgs(UserEmail).WillReturnError(errors.New(""))
+	suite.sqlMock.ExpectQuery("SELECT").WithArgs(UserEmail).WillReturnError(errors.New(""))
 
 	res, _ := GetUserByEmail(suite.dbMock, UserEmail)
 	require.Empty(res)

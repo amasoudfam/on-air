@@ -8,7 +8,7 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/suite"
-	"gorm.io/driver/mysql"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
@@ -25,9 +25,8 @@ func (suite *AuthTestSuite) SetupSuite() {
 		log.Fatal(err)
 	}
 
-	suite.dbMock, err = gorm.Open(mysql.New(mysql.Config{
-		Conn:                      mockDB,
-		SkipInitializeWithVersion: true,
+	suite.dbMock, err = gorm.Open(postgres.New(postgres.Config{
+		Conn: mockDB,
 	}))
 
 	if err != nil {
