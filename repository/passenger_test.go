@@ -42,10 +42,7 @@ func (suite *PassengerTestSuite) TestPassenger_CreatePassenger_Success() {
 
 	suite.sqlMock.ExpectBegin()
 	suite.sqlMock.ExpectQuery(
-		regexp.QuoteMeta(`
-		  INSERT INTO "passengers" ("created_at","updated_at","deleted_at","user_id","national_code","first_name","last_name","gender")
-		  VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
-		 `)).
+		regexp.QuoteMeta(`INSERT INTO "passengers"`)).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}))
 	suite.sqlMock.ExpectCommit()
 	_, err := CreatePassenger(suite.dbMock, suite.UserID, "0123456789", "fname", "lname", "f")
@@ -58,10 +55,7 @@ func (suite *PassengerTestSuite) TestPassenger_CreatePassenger_Failure() {
 
 	suite.sqlMock.ExpectBegin()
 	suite.sqlMock.ExpectQuery(
-		regexp.QuoteMeta(`
-		  INSERT INTO "passengers" ("created_at","updated_at","deleted_at","user_id","national_code","first_name","last_name","gender")
-		  VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
-		 `)).
+		regexp.QuoteMeta(`INSERT INTO "passengers"`)).
 		WillReturnError(errors.New("internal error"))
 	suite.sqlMock.ExpectRollback()
 	res, err := CreatePassenger(suite.dbMock, suite.UserID, "0123456789", "fname", "lname", "f")

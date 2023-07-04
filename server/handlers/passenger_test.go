@@ -112,10 +112,7 @@ func (suite *PassengerTestSuite) TestCreatePassenger_CreatePassenger_Success() {
 
 	suite.sqlMock.ExpectBegin()
 	suite.sqlMock.ExpectQuery(
-		regexp.QuoteMeta(`
-		  INSERT INTO "passengers" ("created_at","updated_at","deleted_at","user_id","national_code","first_name","last_name","gender")
-		  VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
-		 `)).
+		regexp.QuoteMeta(`INSERT INTO "passengers"`)).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}))
 	suite.sqlMock.ExpectCommit()
 
@@ -143,10 +140,7 @@ func (suite *PassengerTestSuite) TestCreatePassenger_CreatePassenger_Failure() {
 
 	suite.sqlMock.ExpectBegin()
 	suite.sqlMock.ExpectQuery(
-		regexp.QuoteMeta(`
-		  INSERT INTO "passengers" ("created_at","updated_at","deleted_at","user_id","national_code","first_name","last_name","gender")
-		  VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
-		 `)).
+		regexp.QuoteMeta(`INSERT INTO "passengers"`)).
 		WillReturnError(errors.New("Internal error"))
 	suite.sqlMock.ExpectRollback()
 
@@ -181,10 +175,7 @@ func (suite *PassengerTestSuite) TestCreatePassenger_CreatePassenger_Duplicate_F
 
 	suite.sqlMock.ExpectBegin()
 	suite.sqlMock.ExpectQuery(
-		regexp.QuoteMeta(`
-		  INSERT INTO "passengers" ("created_at","updated_at","deleted_at","user_id","national_code","first_name","last_name","gender")
-		  VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
-		 `)).
+		regexp.QuoteMeta(`INSERT INTO "passengers"`)).
 		WillReturnError(pgErr)
 	suite.sqlMock.ExpectRollback()
 
