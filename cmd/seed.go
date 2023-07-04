@@ -18,7 +18,7 @@ var seedCmd = &cobra.Command{
 	Short: "seed database",
 	Long:  "this command seeds your database",
 	Run: func(cmd *cobra.Command, args []string) {
-		addUser(configFlag)
+		seed(configFlag)
 	},
 }
 
@@ -26,7 +26,7 @@ func init() {
 	rootCmd.AddCommand(seedCmd)
 }
 
-func addUser(configPath string) error {
+func seed(configPath string) error {
 	cfg, err := config.InitConfig(configPath)
 	if err != nil {
 		panic(err)
