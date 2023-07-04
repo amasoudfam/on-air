@@ -50,8 +50,8 @@ func SetupServer(cfg *config.Config, db *gorm.DB, redis *redis.Client, port stri
 		APIMockClient: &services.APIMockClient{
 			Client:  &http.Client{},
 			Breaker: &breaker.Breaker{},
-			BaseURL: cfg.Services.Flights.BaseURL,
-			Timeout: cfg.Services.Flights.Timeout,
+			BaseURL: cfg.Services.ApiMock.BaseURL,
+			Timeout: cfg.Services.ApiMock.Timeout,
 		},
 		Cache: &cfg.Redis,
 	}

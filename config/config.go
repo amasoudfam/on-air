@@ -40,13 +40,13 @@ type JWT struct {
 	LifeTime time.Duration
 }
 
-type APIMock struct {
+type Service struct {
 	BaseURL string
 	Timeout time.Duration
 }
 
 type Services struct {
-	Flights APIMock
+	ApiMock Service
 }
 
 func InitConfig(configPath string) (*Config, error) {
@@ -80,7 +80,7 @@ func InitConfig(configPath string) (*Config, error) {
 			LifeTime:  viper.GetDuration("auth.lifetime"),
 		},
 		Services: Services{
-			Flights: APIMock{
+			ApiMock: Service{
 				BaseURL: viper.GetString("services.flights.url"),
 				Timeout: viper.GetDuration("services.flights.timeout"),
 			},
