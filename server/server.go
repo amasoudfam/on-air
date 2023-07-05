@@ -2,13 +2,17 @@ package server
 
 import (
 	"fmt"
+	"net/http"
+	"on-air/config"
+	"on-air/server/handlers"
+	"on-air/server/services"
+	"on-air/utils"
+
+	"github.com/eapache/go-resiliency/breaker"
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
-	"net/http"
-	"on-air/config"
-	"on-air/server/handlers"
 )
 
 type CustomValidator struct {
@@ -24,7 +28,12 @@ func (cv *CustomValidator) Validate(i interface{}) error {
 
 func SetupServer(cfg *config.Config, db *gorm.DB, redis *redis.Client, port string) error {
 	e := echo.New()
-	e.Validator = &CustomValidator{validator: validator.New()}
+	customValidator := &utils.CustomValidator{
+		Validator: validator.New(),
+	}
+
+	_ = customValidator.Validator.RegisterValidation("CustomTimeValidator", utils.CustomTimeValidator)
+	e.Validator = customValidator
 	auth := &handlers.Auth{
 		DB:  db,
 		JWT: &cfg.JWT,
@@ -35,6 +44,19 @@ func SetupServer(cfg *config.Config, db *gorm.DB, redis *redis.Client, port stri
 
 	e.POST("/auth/login", auth.Login)
 	e.POST("/auth/register", auth.Register)
+
+	Flight := &handlers.Flight{
+		Redis: redis,
+		APIMockClient: &services.APIMockClient{
+			Client:  &http.Client{},
+			Breaker: &breaker.Breaker{},
+			BaseURL: cfg.Services.ApiMock.BaseURL,
+			Timeout: cfg.Services.ApiMock.Timeout,
+		},
+		Cache: &cfg.Redis,
+	}
+
+	e.GET("/flights", Flight.List)
 
 	return e.Start(fmt.Sprintf(":%s", port))
 }
