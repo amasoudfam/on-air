@@ -19,3 +19,9 @@ gatepay:
   terminal_id: 134754358
   redirect_url: 
   cert_file:
+  worker:
+    enabled: true
+    interval: 
+    iteration: 3
+    concurency: 2
+    limit: 3

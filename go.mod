@@ -26,6 +26,7 @@ require (
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
 	github.com/pepco-api/golang-rest-sdk v0.0.0-20210817123120-3e000d1c08d3 // indirect
+	github.com/sirupsen/logrus v1.9.3 // indirect
 	golang.org/x/tools v0.10.0 // indirect
 )
 

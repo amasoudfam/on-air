@@ -13,6 +13,7 @@ type Config struct {
 	Redis    Redis
 	JWT      JWT
 	IPG      IPG
+	Worker   Worker
 }
 
 type Database struct {
@@ -44,6 +45,14 @@ type IPG struct {
 	TerminalId   int
 	RedirectUrl  string
 	CertFile     string
+}
+
+type Worker struct {
+	Enabled    bool
+	Interval   time.Duration
+	Iteration  int
+	Concurency int
+	Limit      int
 }
 
 func InitConfig(configPath string) (*Config, error) {
@@ -80,6 +89,13 @@ func InitConfig(configPath string) (*Config, error) {
 			TerminalId:   viper.GetInt("gatepay.terminal_id"),
 			RedirectUrl:  viper.GetString("gatepay.redirect_url"),
 			CertFile:     viper.GetString("gatepay.cert_file"),
+		},
+		Worker: Worker{
+			Enabled:    viper.GetBool("worker.enabled"),
+			Interval:   viper.GetDuration("worker.interval"),
+			Iteration:  viper.GetInt("worker.iteration"),
+			Concurency: viper.GetInt("worker.concurency"),
+			Limit:      viper.GetInt("worker.limit"),
 		},
 	}, nil
 }
