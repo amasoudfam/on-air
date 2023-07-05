@@ -1,0 +1,122 @@
+openapi: '3.0.2'
+info:
+  title: Flight API
+  version: 1.0.0
+servers:
+  - url: https://localhost:8080
+    description: on-air project
+paths:
+  /flights:
+    get:
+      summary: Get a list of flights
+      tags:
+        - Flights
+      parameters:
+        - in: query
+          name: origin
+          required: true
+          schema:
+            type: string
+          description: The origin of the flight
+        - in: query
+          name: destination
+          required: true
+          schema:
+            type: string
+          description: The destination of the flight
+        - in: query
+          name: date
+          required: true
+          schema:
+            type: string
+          description: "The date of the flight (format: '2006-01-02')"
+        - in: query
+          name: airline
+          schema:
+            type: string
+          description: The airline of the flight
+        - in: query
+          name: airplane
+          schema:
+            type: string
+          description: The airplane of the flight
+        - in: query
+          name: start_time
+          schema:
+            type: string
+          description: "The start time of the flight (format: 'HH:MM')"
+        - in: query
+          name: end_time
+          schema:
+            type: string
+          description: "The end time of the flight (format: 'HH:MM')"
+        - in: query
+          name: empty_capacity
+          schema:
+            type: boolean
+          description: Filter flights with empty capacity
+        - in: query
+          name: order_by
+          schema:
+            type: string
+            enum:
+              - price
+              - time
+              - duration
+          description: Sort flights by price, time, or duration
+        - in: query
+          name: sort_order
+          schema:
+            type: string
+            enum: 
+              - asc
+              - desc
+          description: Sort order (ascending or descending)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListResponse'
+        '400':
+          description: Invalid query parameters
+        '422':
+          description: Unprocessable Entity
+        '500':
+          description: Internal Server Error
+tags:
+  - name: Flights
+    description: Operations related to flights
+components:
+  schemas:
+    Flight:
+      type: object
+      properties:
+        number:
+          type: string
+        airplane:
+          type: string
+        airline:
+          type: string
+        price:
+          type: integer
+        origin:
+          type: string
+        destination:
+          type: string
+        capacity:
+          type: integer
+        emptyCapacity:
+          type: integer
+        startedAt:
+          type: string
+          format: date-time
+        finishedAt:
+          type: string
+          format: date-time
+    ListResponse:
+      type: object
+      properties:
+        flights:
+          $ref: '#/components/schemas/Flight'

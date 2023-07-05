@@ -4,14 +4,18 @@ go 1.19
 
 require (
 	bou.ke/monkey v1.0.2
+	github.com/eapache/go-resiliency v1.3.0
 	github.com/go-playground/validator/v10 v10.14.1
+	github.com/go-redis/redismock/v9 v9.0.3
 	github.com/golang-migrate/migrate/v4 v4.16.2
 	github.com/jackc/pgx/v5 v5.3.1
+	github.com/jarcoal/httpmock v1.3.0
 	github.com/labstack/echo/v4 v4.10.2
 	github.com/lib/pq v1.10.9
 	github.com/redis/go-redis/v9 v9.0.5
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/viper v1.16.0
+	github.com/stretchr/testify v1.8.3
 	gorm.io/gorm v1.25.1
 )
 
