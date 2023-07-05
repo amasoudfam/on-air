@@ -1,6 +1,6 @@
 openapi: '3.0.2'
 info:
-  title: Flight and Passenger API
+  title: on-air APIs
   version: 1.0.0
 servers:
   - url: https://localhost:8080
@@ -78,7 +78,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ListResponse'
+                $ref: '#/components/schemas/GetFlightsResponse'
         '400':
           description: Invalid query parameters
         '422':
@@ -96,7 +96,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateRequest'
+              $ref: '#/components/schemas/CreatePassengerRequest'
       responses:
         '201':
           description: Successful operation
@@ -118,7 +118,7 @@ paths:
               schema:
                 type: "array"
                 items:
-                  $ref: "#/components/schemas/GetResponse"
+                  $ref: "#/components/schemas/GetPassengersResponse"
         '401':
           description: Unauthorized
         '500':
@@ -155,14 +155,14 @@ components:
         finishedAt:
           type: string
           format: date-time
-    ListResponse:
+    GetFlightsResponse:
       type: object
       properties:
         flights:
           type: "array"
           items:
             $ref: '#/components/schemas/Flight'
-    CreateRequest:
+    CreatePassengerRequest:
       type: "object"
       properties:
         national_code:
@@ -182,7 +182,7 @@ components:
         - first_name
         - last_name
         - gender
-    GetResponse:
+    GetPassengersResponse:
       type: "object"
       properties:
         national_code:
