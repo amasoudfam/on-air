@@ -9,6 +9,7 @@ redis:
   port: 6379
   password: redis
   db: 1
+  ttl: "10m"
 server:
   port: 2000
 auth:
@@ -25,3 +26,7 @@ gatepay:
     iteration: 3
     concurency: 2
     limit: 3
+services:
+  flights: 
+    url: "http://example.com"
+    timeout: "60s"

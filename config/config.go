@@ -14,6 +14,7 @@ type Config struct {
 	JWT      JWT
 	IPG      IPG
 	Worker   Worker
+	Services Services
 }
 
 type Database struct {
@@ -28,6 +29,7 @@ type Redis struct {
 	Port     int
 	Password string
 	DB       int
+	TTL      time.Duration
 }
 
 type Server struct {
@@ -54,6 +56,14 @@ type Worker struct {
 	Concurency int
 	Limit      int
 }
+type Service struct {
+	BaseURL string
+	Timeout time.Duration
+}
+
+type Services struct {
+	ApiMock Service
+}
 
 func InitConfig(configPath string) (*Config, error) {
 	viper.SetConfigFile(configPath)
@@ -76,6 +86,7 @@ func InitConfig(configPath string) (*Config, error) {
 			Port:     viper.GetInt("redis.port"),
 			Password: viper.GetString("redis.password"),
 			DB:       viper.GetInt("redis.db"),
+			TTL:      viper.GetDuration("redis.ttl"),
 		},
 		Server: Server{
 			Port: viper.GetString("server.port"),
@@ -96,6 +107,11 @@ func InitConfig(configPath string) (*Config, error) {
 			Iteration:  viper.GetInt("worker.iteration"),
 			Concurency: viper.GetInt("worker.concurency"),
 			Limit:      viper.GetInt("worker.limit"),
+		Services: Services{
+			ApiMock: Service{
+				BaseURL: viper.GetString("services.flights.url"),
+				Timeout: viper.GetDuration("services.flights.timeout"),
+			},
 		},
 	}, nil
 }
