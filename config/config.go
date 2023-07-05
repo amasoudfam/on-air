@@ -107,6 +107,7 @@ func InitConfig(configPath string) (*Config, error) {
 			Iteration:  viper.GetInt("worker.iteration"),
 			Concurency: viper.GetInt("worker.concurency"),
 			Limit:      viper.GetInt("worker.limit"),
+		},
 		Services: Services{
 			ApiMock: Service{
 				BaseURL: viper.GetString("services.flights.url"),
