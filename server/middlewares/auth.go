@@ -1,11 +1,13 @@
 package middlewares
 
 import (
-	"github.com/labstack/echo/v4"
+	"fmt"
 	"net/http"
 	"on-air/config"
 	"on-air/repository"
 	"strings"
+
+	"github.com/labstack/echo/v4"
 )
 
 const (
@@ -25,15 +27,17 @@ func (a *Auth) AuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			return ctx.NoContent(http.StatusUnauthorized)
 		}
 
-		authParams := strings.Split(authHeader, "")
+		authParams := strings.Split(authHeader, " ")
 		if len(authParams) < 2 {
 			return ctx.NoContent(http.StatusUnauthorized)
 		}
 
 		authType := strings.ToLower(authParams[0])
+		print(authType)
 		if authType != Bearer {
 			return ctx.NoContent(http.StatusUnauthorized)
 		}
+		fmt.Println("here")
 
 		accessToken := authParams[1]
 		payload, err := repository.VerifyToken(a.JWT, accessToken)
