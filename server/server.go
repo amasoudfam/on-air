@@ -58,5 +58,12 @@ func SetupServer(cfg *config.Config, db *gorm.DB, redis *redis.Client, port stri
 
 	e.GET("/flights", Flight.List)
 
+	Ticket := &handlers.Ticket{
+		DB:  db,
+		JWT: &cfg.JWT,
+	}
+
+	e.GET("/tickets", Ticket.GetTickets)
+
 	return e.Start(fmt.Sprintf(":%s", port))
 }
