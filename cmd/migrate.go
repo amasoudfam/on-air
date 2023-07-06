@@ -58,7 +58,7 @@ func migrateDB(state string, configPath string, steps int) {
 	switch state {
 	case "up":
 		err = mig.Up()
-		if err != nil {
+		if err != nil && err.Error() != "no change" {
 			log.Fatal(err)
 		}
 		log.Println("migrate up has done")
