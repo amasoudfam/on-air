@@ -4,6 +4,7 @@ Copyright © 2023 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"on-air/config"
 	"on-air/databases"
@@ -12,6 +13,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -43,36 +45,60 @@ func SetupWorker(configPath string) {
 		return
 	}
 
-	go Run(&cfg.Worker, db)
+	go Run(&cfg.Worker, context.Background(), db)
 
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGTERM)
+	s := <-quit
+	log.Infof("Worker: os signal recieved: %s", s)
 }
 
-func Run(worker *config.Worker, db *gorm.DB) {
+func Run(worker *config.Worker, ctx context.Context, db *gorm.DB) {
 	var apiMock *services.APIMockClient
-	//ticker := time.NewTicker(worker.Interval)
-	//counter := 0
+	ticker := time.NewTicker(worker.Interval)
+	counter := 0
 	for {
-		//TODO : function to get pending ticket
-		var tickets, _ = repository.ExpiringTicket(db)
+		var tickets, _ = repository.GetExpiredTickets(db)
 
 		for _, ticket := range tickets {
-			db.Transaction(func(tx *gorm.DB) error {
-				var flight, _ = repository.FindFlightById(tx, ticket.FlightID)
-				result, _ := apiMock.Refund(flight.Number)
+			err := db.Transaction(func(tx *gorm.DB) error {
 
-				if result == true {
+				var flight, err = repository.FindFlightById(tx, ticket.FlightID)
+				if err != nil {
+					return err
+				}
+
+				_, err = apiMock.Refund(flight.Number)
+
+				//err
+
+				if err != nil {
 					repository.ChangeTicketStatus(tx, ticket.ID, "Expired")
 					repository.ChangePaymentStatus(tx, ticket.ID, "Expired")
 				}
 
 				return nil
 			})
+
+			log.Fatal(err)
 		}
+
+		if worker.Iteration > 0 {
+			counter++
+			if counter >= worker.Iteration {
+				break
+			}
+		}
+
+		select {
+		case <-ticker.C:
+			continue
+		case <-ctx.Done():
+			log.Info("done signal recieved")
+			break
+		}
+
 	}
 
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGTERM)
-	s := <-quit
-
-	log.Infof("Worker: os signal recieved: %s", s)
+	log.Info("workwer finished succesfully")
 }

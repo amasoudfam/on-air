@@ -37,25 +37,25 @@ func ReserveTicket(db *gorm.DB, userID int, flightID int, unitPrice int, passeng
 	return &ticket, nil
 }
 
-func ChangeTicketStatus(db *gorm.DB, ticketID uint, status string) error {
-	var dbTicket models.Ticket
+func ChangeTicketStatus(db *gorm.DB, id uint, status string) error {
+	var ticket models.Ticket
 
-	result := db.First(&dbTicket, "ID = ?", ticketID)
-	if result.RowsAffected == 0 {
-		return errors.New("Ticket not found")
+	err := db.First(&ticket, "ID = ?", id).Error
+	if err != nil {
+		return err
 	}
 
-	dbTicket.Status = status
+	ticket.Status = status
 
-	result = db.Save(dbTicket)
-	if result.RowsAffected == 0 {
-		return errors.New("Ticket not found")
+	err = db.Save(ticket).Error
+	if err != nil {
+		return err
 	}
 
 	return nil
 }
 
-func ExpiringTicket(db *gorm.DB) ([]models.Ticket, error) {
+func GetExpiredTickets(db *gorm.DB) ([]models.Ticket, error) {
 	var tickets []models.Ticket
 
 	err := db.Model(&tickets).

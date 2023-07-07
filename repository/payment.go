@@ -135,15 +135,15 @@ func pasargadApi(ipg *config.IPG) (pasrgad *pasargad.PasargadPaymentAPI) {
 }
 
 func ChangePaymentStatus(db *gorm.DB, ticketID uint, status string) error {
-	var payment []models.Payment
+	var payments []models.Payment
 
-	err := db.Model(&payment).Where("TicketID = ?", ticketID).Error
+	err := db.Model(&payments).Where("ticket_id = ?", ticketID).Error
 
 	if err != nil {
 		return err
 	}
 
-	err = db.Model(&payment).Update("Status", "Expired").Error
+	err = db.Model(&payments).Update("status", "Expired").Error
 
 	if err != nil {
 		return err

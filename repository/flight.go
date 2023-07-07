@@ -57,14 +57,13 @@ func FindFlight(db *gorm.DB, flightNumber string) (*models.Flight, error) {
 	return &flight, nil
 }
 
-func FindFlightById(db *gorm.DB, FlightID int) (*models.Flight, error) {
-
+func FindFlightById(db *gorm.DB, id int) (*models.Flight, error) {
 	var flight models.Flight
 
-	err := db.First(&flight, "ID = ?", FlightID).Error
+	err := db.First(&flight, "ID = ?", id).Error
 
 	if err != nil {
-		return &models.Flight{}, err
+		return nil, err
 	}
 
 	return &flight, nil
