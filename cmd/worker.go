@@ -6,7 +6,9 @@ package cmd
 import (
 	"fmt"
 	"on-air/config"
+	"on-air/databases"
 	"on-air/repository"
+	"on-air/server/services"
 	"os"
 	"os/signal"
 	"syscall"
@@ -34,32 +36,43 @@ func SetupWorker(configPath string) {
 		panic(err)
 	}
 
+	db := databases.InitPostgres(cfg)
+
 	if !cfg.Worker.Enabled {
 		log.Info("Worker: is disabled")
 		return
 	}
 
-	go Run(&cfg.Worker)
+	go Run(&cfg.Worker, db)
 
 }
 
-func Run(worker *config.Worker) {
+func Run(worker *config.Worker, db *gorm.DB) {
+	var apiMock *services.APIMockClient
 	//ticker := time.NewTicker(worker.Interval)
 	//counter := 0
 	for {
 		//TODO : function to get pending ticket
+		var tickets, _ = repository.ExpiringTicket(db)
 
+		for _, ticket := range tickets {
+			db.Transaction(func(tx *gorm.DB) error {
+				var flight, _ = repository.FindFlightById(tx, ticket.FlightID)
+				result, _ := apiMock.Refund(flight.Number)
+
+				if result == true {
+					repository.ChangeTicketStatus(tx, ticket.ID, "Expired")
+					repository.ChangePaymentStatus(tx, ticket.ID, "Expired")
+				}
+
+				return nil
+			})
+		}
 	}
+
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGTERM)
 	s := <-quit
 
-	Action(worker)
-
 	log.Infof("Worker: os signal recieved: %s", s)
-}
-
-func Action(worker *config.Worker) {
-	var db *gorm.DB
-	repository.ExpiringTicket(db)
 }

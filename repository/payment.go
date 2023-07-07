@@ -15,19 +15,21 @@ import (
 func PayTicket(db *gorm.DB, ipg *config.IPG, ticketID uint) (string, error) {
 	var dbticket models.Ticket
 
-	result := db.First(&dbticket, "ID = ?", ticketID)
-	if result.RowsAffected == 0 {
-		return "", errors.New("Ticket not found")
+	err := db.First(&dbticket, "ID = ?", ticketID).Error
+
+	if err != nil {
+		return "", err
 	}
 
-	dbPayment := models.Payment{
+	payment := models.Payment{
 		TicketID: ticketID,
 		Amount:   dbticket.UnitPrice * dbticket.Count,
 		Status:   "Requested",
 	}
 
-	result = db.Create(&dbPayment)
-	if err := result.Error; err != nil {
+	err = db.Create(&payment).Error
+
+	if err != nil {
 		return "", err
 	}
 
@@ -35,12 +37,13 @@ func PayTicket(db *gorm.DB, ipg *config.IPG, ticketID uint) (string, error) {
 	pasargadApi := pasargadApi(ipg)
 
 	request := pasargad.CreatePaymentRequest{
-		Amount:        int64(dbPayment.Amount),
-		InvoiceNumber: strconv.Itoa(int(dbPayment.ID)),
-		InvoiceDate:   dbPayment.CreatedAt.String(),
+		Amount:        int64(payment.Amount),
+		InvoiceNumber: strconv.Itoa(int(payment.ID)),
+		InvoiceDate:   payment.CreatedAt.String(),
 	}
 
 	response, err := pasargadApi.Redirect(request)
+
 	if err != nil {
 		return "", err
 	}
@@ -53,9 +56,9 @@ var notFountPaymentError = errors.New("Payment not found")
 func VerifyPayment(db *gorm.DB, ipg *config.IPG, paymentID uint) (string, error) {
 	var dbPayment models.Payment
 
-	result := db.First(&dbPayment, "ID = ?", paymentID)
-	if result.RowsAffected == 0 {
-		return "", notFountPaymentError
+	err := db.First(&dbPayment, "ID = ?", paymentID).Error
+	if err != nil {
+		return "", err
 	}
 
 	pasargadApi := pasargadApi(ipg)
@@ -88,10 +91,11 @@ func VerifyPayment(db *gorm.DB, ipg *config.IPG, paymentID uint) (string, error)
 
 	if verifyResponse.IsSuccess {
 		dbPayment.Status = "Verified"
-		result = db.Save(dbPayment)
+		err = db.Save(dbPayment).Error
 
-		if result.RowsAffected == 0 {
-			return "", notFountPaymentError
+		if err != nil {
+			RefundPayment(ipg, dbPayment)
+			return "", err
 		}
 
 	} else {
@@ -128,4 +132,22 @@ func pasargadApi(ipg *config.IPG) (pasrgad *pasargad.PasargadPaymentAPI) {
 		ipg.RedirectUrl,
 		ipg.CertFile,
 	)
+}
+
+func ChangePaymentStatus(db *gorm.DB, ticketID uint, status string) error {
+	var payment []models.Payment
+
+	err := db.Model(&payment).Where("TicketID = ?", ticketID).Error
+
+	if err != nil {
+		return err
+	}
+
+	err = db.Model(&payment).Update("Status", "Expired").Error
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

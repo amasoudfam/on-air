@@ -4,15 +4,16 @@ import (
 	"net/http"
 	"on-air/config"
 	"on-air/repository"
-	"on-air/services"
+	"on-air/server/services"
 
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
 )
 
 type Ticket struct {
-	DB  *gorm.DB
-	JWT *config.JWT
+	DB      *gorm.DB
+	JWT     *config.JWT
+	apiMock *services.APIMockClient
 }
 
 type ReserveRequest struct {
@@ -36,27 +37,31 @@ func (t *Ticket) Reserve(ctx echo.Context) error {
 
 	userId := ctx.Get("user_id").(int)
 
-	//TODO: firstly find from DB
-	var flighInfo, err = services.GetInfo(req.FlightNumber)
+	var flighInfo, err = t.apiMock.GetFlight(req.FlightNumber)
 
 	if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, "Internal server")
 	}
 
-	//TODO: Get all data from mock server
-	flight, err := repository.AddFlight(t.DB, req.FlightNumber)
+	flight, err := repository.AddFlight(t.DB,
+		flighInfo.Number,
+		flighInfo.Origin,
+		flighInfo.Destination,
+		flighInfo.Airplane,
+		flighInfo.Airline,
+	)
 
 	if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, "Internal server Error")
 	}
 
-	flightReserve, err := services.Reserve(req.FlightNumber, len(req.PassengerIDs))
+	flightReserve, err := t.apiMock.Reserve(req.FlightNumber /*len(req.PassengerIDs)*/)
 
 	if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, "Internal server Error")
 	}
 
-	if !flightReserve.Reserved {
+	if !flightReserve {
 		return ctx.JSON(http.StatusInternalServerError, "Sold out")
 	}
 
@@ -69,7 +74,7 @@ func (t *Ticket) Reserve(ctx echo.Context) error {
 	)
 
 	if err != nil {
-		services.Refund(req.FlightNumber, len(req.PassengerIDs))
+		t.apiMock.Refund(req.FlightNumber /*len(req.PassengerIDs)*/)
 		return ctx.JSON(http.StatusInternalServerError, "Internal server Error")
 	}
 

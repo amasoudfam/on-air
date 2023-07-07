@@ -55,15 +55,15 @@ func ChangeTicketStatus(db *gorm.DB, ticketID uint, status string) error {
 	return nil
 }
 
-func ExpiringTicket(db *gorm.DB) {
-	var ticket []models.Ticket
+func ExpiringTicket(db *gorm.DB) ([]models.Ticket, error) {
+	var tickets []models.Ticket
 
-	result := db.Model(&ticket).
-		Where("Status = ? AND CreatedAt > ?", "Reserved", time.Now().Add(-15*time.Minute))
+	err := db.Model(&tickets).
+		Where("Status = ? AND CreatedAt > ?", "Reserved", time.Now().Add(-15*time.Minute)).Error
 
-	if result.RowsAffected == 0 {
-		return
+	if err != nil {
+		return tickets, err
 	}
 
-	result = db.Model(&ticket).Update("Status", "Expired")
+	return tickets, nil
 }

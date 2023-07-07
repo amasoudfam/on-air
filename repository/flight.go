@@ -1,17 +1,41 @@
 package repository
 
 import (
-	"errors"
 	"on-air/models"
 
 	"gorm.io/gorm"
 )
 
-func AddFlight(db *gorm.DB, flightNumber string) (*models.Flight, error) {
+func AddFlight(
+	db *gorm.DB,
+	flightNumber string,
+	origin string,
+	destination string,
+	airLine string,
+	airPlane string,
+) (*models.Flight, error) {
 
-	//TODO: complete model
+	var fromCity models.City
+	var toCity models.City
+
+	err := db.First(&fromCity, "Name = ?", origin).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	err = db.First(&toCity, "Name = ?", destination).Error
+
+	if err != nil {
+		return nil, err
+	}
+
 	flight := models.Flight{
-		Number: flightNumber,
+		Number:     flightNumber,
+		FromCityID: fromCity.ID,
+		ToCityID:   toCity.ID,
+		Airplane:   airPlane,
+		Airline:    airLine,
 	}
 
 	result := db.Create(&flight)
@@ -23,12 +47,24 @@ func AddFlight(db *gorm.DB, flightNumber string) (*models.Flight, error) {
 }
 
 func FindFlight(db *gorm.DB, flightNumber string) (*models.Flight, error) {
+	var flight models.Flight
+
+	err := db.First(&flight, "Number = ?", flightNumber).Error
+	if err != nil {
+		return &models.Flight{}, err
+	}
+
+	return &flight, nil
+}
+
+func FindFlightById(db *gorm.DB, FlightID int) (*models.Flight, error) {
 
 	var flight models.Flight
 
-	result := db.First(&flight, "Number = ?", flightNumber)
-	if result.RowsAffected == 0 {
-		return &models.Flight{}, errors.New("flight not found")
+	err := db.First(&flight, "ID = ?", FlightID).Error
+
+	if err != nil {
+		return &models.Flight{}, err
 	}
 
 	return &flight, nil
