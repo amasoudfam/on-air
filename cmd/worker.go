@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"on-air/config"
 	"on-air/databases"
+	"on-air/models"
 	"on-air/repository"
 	"on-air/server/services"
 	"os"
@@ -73,8 +74,8 @@ func Run(worker *config.Worker, ctx context.Context, db *gorm.DB) {
 				//err
 
 				if err != nil {
-					repository.ChangeTicketStatus(tx, ticket.ID, "Expired")
-					repository.ChangePaymentStatus(tx, ticket.ID, "Expired")
+					repository.ChangeTicketStatus(tx, ticket.ID, string(models.TicketExpired))
+					repository.ChangePaymentStatus(tx, ticket.ID, string(models.PaymentExpired))
 				}
 
 				return nil

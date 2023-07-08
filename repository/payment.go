@@ -24,7 +24,7 @@ func PayTicket(db *gorm.DB, ipg *config.IPG, ticketID uint) (string, error) {
 	payment := models.Payment{
 		TicketID: ticketID,
 		Amount:   dbticket.UnitPrice * dbticket.Count,
-		Status:   "Requested",
+		Status:   string(models.Requested),
 	}
 
 	err = db.Create(&payment).Error
@@ -90,7 +90,7 @@ func VerifyPayment(db *gorm.DB, ipg *config.IPG, paymentID uint) (string, error)
 	}
 
 	if verifyResponse.IsSuccess {
-		dbPayment.Status = "Verified"
+		dbPayment.Status = string(models.Verified)
 		err = db.Save(dbPayment).Error
 
 		if err != nil {
@@ -102,7 +102,7 @@ func VerifyPayment(db *gorm.DB, ipg *config.IPG, paymentID uint) (string, error)
 		RefundPayment(ipg, dbPayment)
 	}
 
-	ChangeTicketStatus(db, dbPayment.TicketID, "Payed")
+	ChangeTicketStatus(db, dbPayment.TicketID, string(models.PaymentPaid))
 
 	return dbPayment.Status, nil
 }
@@ -143,7 +143,7 @@ func ChangePaymentStatus(db *gorm.DB, ticketID uint, status string) error {
 		return err
 	}
 
-	err = db.Model(&payments).Update("status", "Expired").Error
+	err = db.Model(&payments).Update("status", status).Error
 
 	if err != nil {
 		return err

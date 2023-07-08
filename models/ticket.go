@@ -22,5 +22,7 @@ type Ticket struct {
 type TicketStatus string
 
 const (
-	Expired TicketStatus = "Expired"
+	Reserved      TicketStatus = "Reserved"
+	TicketPaid    TicketStatus = "Paid"
+	TicketExpired TicketStatus = "Expired"
 )

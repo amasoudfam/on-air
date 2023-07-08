@@ -25,7 +25,7 @@ func ReserveTicket(db *gorm.DB, userID int, flightID int, unitPrice int, passeng
 		FlightID:   flightID,
 		Count:      len(passengerIDs),
 		Passengers: passengers,
-		Status:     "Reserved",
+		Status:     string(models.Reserved),
 		CreatedAt:  time.Now(),
 	}
 
@@ -59,7 +59,7 @@ func GetExpiredTickets(db *gorm.DB) ([]models.Ticket, error) {
 	var tickets []models.Ticket
 
 	err := db.Model(&tickets).
-		Where("Status = ? AND CreatedAt > ?", "Reserved", time.Now().Add(-15*time.Minute)).Error
+		Where("Status = ? AND CreatedAt > ?", string(models.Reserved), time.Now().Add(-15*time.Minute)).Error
 
 	if err != nil {
 		return tickets, err
