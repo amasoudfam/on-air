@@ -38,7 +38,7 @@ func generate_output(ticket models.Ticket) ([]byte, error) {
 	itemFontSize := 11.0
 	qrLocation := 0.0
 	lightSeparator := 7.0
-	for i := 0; i < ticket.Count; i++ {
+	for i, passenger := range ticket.Passengers {
 		if i%4 == 0 {
 			pdf.AddPage()
 			qrLocation = 15.0
@@ -57,19 +57,19 @@ func generate_output(ticket models.Ticket) ([]byte, error) {
 		pdf.Cell(c1, 10, "Name:")
 
 		pdf.SetFont(font, "BI", itemFontSize)
-		pdf.Cell(c2, 10, ticket.Passengers[i].FirstName+" "+ticket.Passengers[i].LastName)
+		pdf.Cell(c2, 10, passenger.FirstName+" "+passenger.LastName)
 
 		pdf.SetFont(titleFont, "", titleFontSize)
 		pdf.Cell(c3, 10, "National Code:")
 
 		pdf.SetFont(font, "BI", itemFontSize)
-		pdf.Cell(c4, 10, ticket.Passengers[i].NationalCode)
+		pdf.Cell(c4, 10, passenger.NationalCode)
 
 		pdf.SetFont(titleFont, "", titleFontSize)
 		pdf.Cell(c5, 10, "Gender:")
 
 		pdf.SetFont(font, "BI", itemFontSize)
-		pdf.Cell(c6, 10, ticket.Passengers[i].Gender)
+		pdf.Cell(c6, 10, passenger.Gender)
 
 		pdf.Ln(lightSeparator)
 
@@ -128,7 +128,7 @@ func generate_output(ticket models.Ticket) ([]byte, error) {
 		pdf.Cell(c2, 10, strconv.Itoa(ticket.UnitPrice)+" Rials")
 
 		id := strconv.FormatUint(uint64(ticket.ID), 10)
-		qrCode, err := qrcode.New("https://www.onair.org/trace/"+id+"/"+ticket.Passengers[i].NationalCode, qrcode.Medium)
+		qrCode, err := qrcode.New("https://www.onair.org/trace/"+id+"/"+passenger.NationalCode, qrcode.Medium)
 		if err != nil {
 			return nil, err
 		}
