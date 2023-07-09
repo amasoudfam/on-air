@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"fmt"
 	"on-air/models"
 
 	"gorm.io/gorm"
@@ -17,7 +16,7 @@ func GetUserTickets(db *gorm.DB, userID uint) ([]models.Ticket, error) {
 		Preload("Passengers").
 		Find(&tickets).Error
 	if err != nil {
-		fmt.Println(err)
+		return nil, err
 	}
 
 	return tickets, nil
