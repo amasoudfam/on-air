@@ -1,2 +1,0 @@
-Alter table flights rename column from_city_id to from_city;
-Alter table flights rename column to_city_id to to_city;
