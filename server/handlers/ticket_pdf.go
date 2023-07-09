@@ -158,14 +158,10 @@ func generate_output(ticket models.Ticket) ([]byte, error) {
 }
 
 func (t *TicketPDF) Get(ctx echo.Context) error {
-	userID, err := strconv.Atoi(ctx.Get("id").(string))
-	if err != nil {
-		return ctx.NoContent(http.StatusBadRequest)
-	}
-
+	userID, _ := strconv.Atoi(ctx.Get("id").(string))
 	ticketID, err := strconv.Atoi(ctx.QueryParam("ticket_id"))
 	if err != nil {
-		return ctx.NoContent(http.StatusBadRequest)
+		return ctx.JSON(http.StatusBadRequest, "Invalid ticket_id")
 	}
 
 	ticket, err := repository.GetTicket(t.DB, userID, ticketID)
