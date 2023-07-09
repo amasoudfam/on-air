@@ -14,7 +14,7 @@ type Flight struct {
 	Airplane   string `gorm:"type:varchar(50)"`
 	Airline    string `gorm:"type:varchar(50)"`
 	StartedAt  time.Time
-	FinishedAt time.Time
+	EndedAt    time.Time
 	FromCity   City `gorm:"foreignKey:FromCityID"`
 	ToCity     City `gorm:"foreignKey:ToCityID"`
 }
