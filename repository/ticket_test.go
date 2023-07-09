@@ -38,17 +38,6 @@ func (suite *TicketTestSuite) SetupSuite() {
 
 func (suite *TicketTestSuite) TestTickets_GetTickets_Success() {
 	require := suite.Require()
-	passengers := []models.Passenger{
-		{
-			UserID:       uint(1),
-			NationalCode: "2550000000",
-			FirstName:    "pfname1",
-			LastName:     "plname1",
-			Gender:       "male",
-		},
-	}
-	passengers[0].ID = uint(1)
-
 	data := []models.Ticket{
 		{
 			UserID:    1,
@@ -84,16 +73,27 @@ func (suite *TicketTestSuite) TestTickets_GetTickets_Success() {
 					},
 				},
 			},
-			Passengers: passengers,
+			Passengers: []models.Passenger{
+				{
+					UserID:       uint(1),
+					NationalCode: "2550000000",
+					FirstName:    "pfname1",
+					LastName:     "plname1",
+					Gender:       "male",
+				},
+			},
 		},
 	}
-	data[0].ID = uint(1)
-	data[0].User.ID = uint(1)
-	data[0].Flight.ID = uint(1)
-	data[0].Flight.FromCity.ID = uint(1)
-	data[0].Flight.FromCity.Country.ID = uint(1)
-	data[0].Flight.ToCity.ID = uint(2)
-	data[0].Flight.ToCity.Country.ID = uint(1)
+
+	ticket1 := &data[0]
+	ticket1.ID = uint(1)
+	ticket1.User.ID = uint(1)
+	ticket1.Flight.ID = uint(1)
+	ticket1.Flight.FromCity.ID = uint(1)
+	ticket1.Flight.FromCity.Country.ID = uint(1)
+	ticket1.Flight.ToCity.ID = uint(2)
+	ticket1.Flight.ToCity.Country.ID = uint(1)
+	ticket1.Passengers[0].ID = uint(1)
 
 	mockTicketRows := suite.sqlMock.NewRows([]string{"id", "unit_price", "flight_id", "count", "status", "user_id"}).
 		AddRow(1, 100, 1, 2, "complete", 1)
