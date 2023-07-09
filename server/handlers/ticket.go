@@ -5,7 +5,6 @@ import (
 	"on-air/config"
 	"on-air/models"
 	"on-air/repository"
-	"strconv"
 
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
@@ -61,7 +60,7 @@ type TicketResponse struct {
 }
 
 func (t *Ticket) GetTickets(ctx echo.Context) error {
-	userID, _ := strconv.Atoi(ctx.Get("id").(string))
+	userID, _ := ctx.Get("user_id").(int)
 
 	tickets, err := repository.GetUserTickets(t.DB, uint(userID))
 	if err != nil {

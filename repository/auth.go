@@ -49,7 +49,6 @@ func VerifyToken(cfg *config.JWT, token string) (*payload, error) {
 	}
 
 	jwtToken, err := jwt.ParseWithClaims(token, &payload{}, keyFunc)
-
 	if err != nil {
 		return nil, ErrInvalidToken
 	}
