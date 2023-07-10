@@ -123,11 +123,31 @@ paths:
           description: Unauthorized
         '500':
           description: Internal server error
+  /tickets:
+    get:
+      summary: Get all tickets
+      tags: 
+          - Tickets
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/GetTicketsResponse"
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal server error
 tags:
   - name: Flights
     description: Operations related to flights
   - name: Passengers
     description: Operations related to passengers
+  - name: Tickets
+    description: Operations related to tickets
 components:
   schemas:
     Flight:
@@ -202,3 +222,100 @@ components:
         - first_name
         - last_name
         - gender
+    GetTicketsResponse:
+      type: "object"
+      properties:
+        id:
+          type: "number"
+        unit_price:
+          type: "number"
+          example: 1200000
+        count:
+          type: "number"
+          example: 2
+        status:
+          type: "string"
+          example: "complete"
+        created_at:
+          type: "string"
+          example: "2006-01-02 15:04"
+        user: 
+          type: "object"
+          $ref: "#/components/schemas/TicketUser"
+        flight:
+          type: "object"
+          $ref: "#/components/schemas/TicketFlight"
+        passengers:
+          type: "array"
+          items:
+            type: "object"
+            $ref: "#/components/schemas/TicketPassenger"
+    TicketUser:
+      type: "object"
+      properties:
+        first_name: 
+          type: "string"
+          example: "john"
+        last_name: 
+          type: "string"
+          example: "parker"
+        email: 
+          type: "string"
+          example: "test@example.com"
+        phone_number:
+          type: "number"
+          example: "09122222222"
+    TicketFlight: 
+      type: "object"
+      properties:
+        number:     
+          type: "string"
+          example: "F102"
+        airplane:
+          type: "string"
+          example: "F12"
+        airline:
+          type: "string"
+          example: "Aseman"
+        started_at:
+          type: "string"
+          example: "2006-01-02 15:04"
+        finished_at:
+          type: "string"
+          example: "2006-01-02 15:04"
+        from_city: 
+            type: "object"
+            $ref: "#/components/schemas/TicketFlightCity"
+        to_city: 
+            type: "object"
+            $ref: "#/components/schemas/TicketFlightCity"
+    TicketPassenger:
+      type: "object"
+      properties:
+        first_name:     
+          type: "string"
+          example: "john"
+        last_name:
+          type: "string"
+          example: "parker"
+        gender:
+          type: "string"
+          example: "male"
+        national_code:
+          type: "string"
+          example: "25500000000"
+    TicketFlightCity:
+      type: "object"
+      properties:
+        name:     
+          type: "string"
+          example: "Shiraz"
+        country:
+          type: "object"
+          $ref: "#/components/schemas/TicketFlightCountry"
+    TicketFlightCountry:
+      type: "object"
+      properties:
+        name:     
+          type: "string"
+          example: "Iran"

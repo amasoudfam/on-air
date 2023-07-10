@@ -1,13 +1,12 @@
 package services
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"net/url"
-	"strings"
 	"time"
 
 	"github.com/eapache/go-resiliency/breaker"
@@ -235,11 +234,25 @@ type ReserveResponse struct {
 	Message string
 }
 
-func (c *APIMockClient) Reserve(number string) (bool, error) {
+type ReserveRequestParameters struct {
+	Number string
+	Count  int
+}
+
+func (c *APIMockClient) Reserve(flightNumber string, ticketCount int) (bool, error) {
 	baseUrl := c.BaseURL + "/flights/reserve"
-	data := url.Values{}
-	data.Set("number", number)
-	req, err := http.NewRequest("POST", baseUrl, strings.NewReader(data.Encode()))
+	data := ReserveRequestParameters{
+		Number: flightNumber,
+		Count:  ticketCount,
+	}
+
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		fmt.Println("Error encoding JSON:", err)
+		return false, err
+	}
+
+	req, err := http.NewRequest("POST", baseUrl, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return false, err
 	}
@@ -289,11 +302,25 @@ type RefundResponse struct {
 	Message string
 }
 
-func (c *APIMockClient) Refund(number string) (bool, error) {
+type RefundRequestParameters struct {
+	Number string
+	Count  int
+}
+
+func (c *APIMockClient) Refund(flightNumber string, ticketCount int) (bool, error) {
 	baseUrl := c.BaseURL + "/flights/refund"
-	data := url.Values{}
-	data.Set("number", number)
-	req, err := http.NewRequest("POST", baseUrl, strings.NewReader(data.Encode()))
+	data := RefundRequestParameters{
+		Number: flightNumber,
+		Count:  ticketCount,
+	}
+
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		fmt.Println("Error encoding JSON:", err)
+		return false, err
+	}
+
+	req, err := http.NewRequest("POST", baseUrl, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return false, err
 	}

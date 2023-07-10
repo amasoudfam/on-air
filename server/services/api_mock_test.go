@@ -201,7 +201,7 @@ func (suite *FlightServiceTestSuite) TestGetFlightReserveFromApi_Success() {
 	defer mockServer.Close()
 	suite.APIMockClient.BaseURL = mockServer.URL
 	expectedRes := true
-	reserveRes, err := suite.APIMockClient.Reserve("FL001")
+	reserveRes, err := suite.APIMockClient.Reserve("FL001", 1)
 	require.NoError(suite.T(), err)
 	require.NotNil(suite.T(), reserveRes)
 	require.Equal(suite.T(), expectedRes, reserveRes)
@@ -226,7 +226,7 @@ func (suite *FlightServiceTestSuite) TestGetFlightRefundFromApi_Success() {
 	defer mockServer.Close()
 	suite.APIMockClient.BaseURL = mockServer.URL
 	expectedFlights := true
-	reserveRes, err := suite.APIMockClient.Refund("FL001")
+	reserveRes, err := suite.APIMockClient.Refund("FL001", 1)
 	require.NoError(suite.T(), err)
 	require.NotNil(suite.T(), reserveRes)
 	require.Equal(suite.T(), expectedFlights, reserveRes)

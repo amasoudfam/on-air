@@ -14,7 +14,7 @@ server:
   port: 2000
 auth:
   secret-key: mysecretkey
-  lifetime: 60 m
+  lifetime: "60m"
 services:
   flights: 
     url: "http://example.com"
