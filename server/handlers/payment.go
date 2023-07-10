@@ -19,7 +19,7 @@ type PayRequest struct {
 }
 
 type PayResponse struct {
-	Address string `json:"token" binding:"required"`
+	Address string `json:"gate_way_url" binding:"required"`
 }
 
 func (t *Payment) Pay(ctx echo.Context) error {

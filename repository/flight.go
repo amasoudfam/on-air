@@ -12,8 +12,7 @@ func AddFlight(
 	origin string,
 	destination string,
 	airLine string,
-	airPlane string,
-) (*models.Flight, error) {
+	airPlane string) (*models.Flight, error) {
 
 	var fromCity models.City
 	var toCity models.City

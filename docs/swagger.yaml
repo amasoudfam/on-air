@@ -123,11 +123,105 @@ paths:
           description: Unauthorized
         '500':
           description: Internal server error
+  /ticket:
+    post:
+      summary: Create a new Ticket
+      tags:
+        - Tickets
+      parameters:
+        - in: query
+          name: flight_number
+          required: true
+          schema:
+            type: string
+          description: The flight_number of the ticket
+        - in: query
+          name: passengers
+          required: true
+          schema:
+            type: array
+            items:
+              type: integer
+      requestBody:
+        description: JSON object containing Ticket information
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReserveResponse'
+      responses:
+        '201':
+          description: Successful operation
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal server error
+  /payment:
+    post:
+      summary: Create a new request pay
+      tags:
+        - Payments
+      parameters:
+        - in: query
+          name: ticket_id
+          required: true
+          schema:
+            type: integer
+          description: The ticket_id of the ticket
+      requestBody:
+        description: JSON object containing payment information
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PayResponse'
+      responses:
+        '201':
+          description: Successful operation
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal server error
+    get:
+      summary: call back url to verify
+      tags:
+        - Payments
+      parameters:
+        - in: query
+          name: payment_id
+          required: true
+          schema:
+            type: integer
+          description: The payment_id of the payment
+      requestBody:
+        description: JSON object containing payment information
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CallBackResponse'
+      responses:
+        '201':
+          description: Successful operation
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal server error
 tags:
   - name: Flights
     description: Operations related to flights
   - name: Passengers
     description: Operations related to passengers
+  - name: Tickets
+    description: Operations related to Tickets
+  - name: Payments
+    description: Operations related to Payment
 components:
   schemas:
     Flight:
@@ -202,3 +296,27 @@ components:
         - first_name
         - last_name
         - gender
+    ReserveResponse:
+      type: "object"
+      properties:
+        status:
+          type: "string"
+          example: "Reserved"
+      required:
+        - status
+    PayResponse:
+      type: "object"
+      properties:
+        gate_way_url:
+          type: "string"
+          example: "http://example.com/token=xyz123"
+      required:
+        - gate_way_url
+    CallBackResponse:
+      type: "object"
+      properties:
+        status:
+          type: "string"
+          example: "verified"
+      required:
+        - status

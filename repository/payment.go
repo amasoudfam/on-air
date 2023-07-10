@@ -33,7 +33,6 @@ func PayTicket(db *gorm.DB, ipg *config.IPG, ticketID uint) (string, error) {
 		return "", err
 	}
 
-	//TODO: Third party call to get bank address with token to redirect to bank
 	pasargadApi := pasargadApi(ipg)
 
 	request := pasargad.CreatePaymentRequest{
@@ -78,7 +77,6 @@ func VerifyPayment(db *gorm.DB, ipg *config.IPG, paymentID uint) (string, error)
 		return "", errors.New("Transaction not correct!")
 	}
 
-	//TODO : add TransactionReferenceID to payment
 	verifyRequest := pasargad.CreateVerifyPaymentRequest{
 		InvoiceNumber: strconv.Itoa(int(dbPayment.ID)),
 		InvoiceDate:   dbPayment.CreatedAt.String(),
@@ -116,7 +114,6 @@ func RefundPayment(ipg *config.IPG, dbPayment models.Payment) {
 		InvoiceDate:   dbPayment.CreatedAt.String(),
 	}
 
-	//TODO : rertry multiple times
 	_, err := pasargadApi.Refund(request)
 
 	if err != nil {

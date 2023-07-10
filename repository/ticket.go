@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"errors"
 	"on-air/models"
 	"time"
 
@@ -12,12 +11,9 @@ func ReserveTicket(db *gorm.DB, userID int, flightID int, unitPrice int, passeng
 	var passengers []models.Passenger
 
 	result := db.Model(&passengers).Where("ID IN ?", passengerIDs)
-	if result.RowsAffected != int64(len(passengerIDs)) {
-		return nil, errors.New("passengers not found")
+	if result.RowsAffected == 0 || result.RowsAffected != int64(len(passengerIDs)) {
+		return nil, result.Error
 	}
-
-	//TODO: Third party call to mock server to reserve a flight
-	//TODO: add flight in data base
 
 	ticket := models.Ticket{
 		UserID:     uint(userID),
