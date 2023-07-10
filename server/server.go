@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"on-air/config"
 	"on-air/server/handlers"
+	"on-air/server/middlewares"
 	"on-air/server/services"
 	"on-air/utils"
 
@@ -38,9 +39,10 @@ func SetupServer(cfg *config.Config, db *gorm.DB, redis *redis.Client, port stri
 		DB:  db,
 		JWT: &cfg.JWT,
 	}
-	//authMiddleware := &middlewares.Auth{
-	//	JWT: &cfg.JWT,
-	//}
+
+	authMiddleware := &middlewares.Auth{
+		JWT: &cfg.JWT,
+	}
 
 	e.POST("/auth/login", auth.Login)
 	e.POST("/auth/register", auth.Register)
@@ -72,6 +74,25 @@ func SetupServer(cfg *config.Config, db *gorm.DB, redis *redis.Client, port stri
 	}
 
 	e.GET("/flights", Flight.List)
+
+	Ticket := &handlers.Ticket{
+		DB:  db,
+		JWT: &cfg.JWT,
+	}
+
+	e.GET("/tickets", Ticket.GetTickets, authMiddleware.AuthMiddleware)
+	passenger := &handlers.Passenger{
+		DB: db,
+	}
+
+	e.GET("/passenger", passenger.Get, authMiddleware.AuthMiddleware)
+	e.POST("/passenger", passenger.Create, authMiddleware.AuthMiddleware)
+
+	ticketPDF := &handlers.TicketPDF{
+		DB: db,
+	}
+
+	e.GET("/ticketPDF", ticketPDF.Get, authMiddleware.AuthMiddleware)
 
 	return e.Start(fmt.Sprintf(":%s", port))
 }

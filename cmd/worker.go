@@ -64,12 +64,12 @@ func Run(worker *config.Worker, ctx context.Context, db *gorm.DB) {
 		for _, ticket := range tickets {
 			err := db.Transaction(func(tx *gorm.DB) error {
 
-				var flight, err = repository.FindFlightById(tx, ticket.FlightID)
+				var flight, err = repository.FindFlightById(tx, int(ticket.FlightID))
 				if err != nil {
 					return err
 				}
 
-				_, err = apiMock.Refund(flight.Number)
+				_, err = apiMock.Refund(flight.Number, 1)
 
 				//err
 

@@ -1,13 +1,12 @@
 package cmd
 
 import (
-	"database/sql"
-	"fmt"
 	"log"
 
 	"github.com/spf13/cobra"
 
 	"on-air/config"
+	"on-air/databases"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
@@ -22,45 +21,27 @@ var migrateCmd = &cobra.Command{
 	Long:  `this command migrates all of your migration files`,
 	Run: func(cmd *cobra.Command, args []string) {
 		state, _ := cmd.Flags().GetString("state")
-		if state == "up" {
-			migrateDB(true, configFlag)
-		} else if state == "down" {
-			migrateDB(false, configFlag)
-		} else {
-			log.Fatal("Invalid state")
-			return
-		}
+		steps, _ := cmd.Flags().GetInt("steps")
+		migrateDB(state, configFlag, steps)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(migrateCmd)
 	migrateCmd.Flags().String("state", "down", "write the state")
+	migrateCmd.Flags().Int("steps", 1, "write the steps that you need up or down")
 }
 
-func migrateDB(isUpgrade bool, configPath string) {
+func migrateDB(state string, configPath string, steps int) {
 	conf, err := config.InitConfig(configPath)
 	if err != nil {
 		log.Fatal(err)
 		return
 	}
 
-	connString := fmt.Sprintf(
-		"host=%s user=%s password=%s dbname=%s port=%d sslmode=disable",
-		conf.Database.Host,
-		conf.Database.Username,
-		conf.Database.Password,
-		conf.Database.DB,
-		conf.Database.Port,
-	)
-
-	db, err := sql.Open("postgres", connString)
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
-
-	driver, err := postgres.WithInstance(db, &postgres.Config{})
+	db := databases.InitPostgres(conf)
+	sql, _ := db.DB()
+	driver, err := postgres.WithInstance(sql, &postgres.Config{})
 	if err != nil {
 		log.Fatal(err)
 		return
@@ -74,9 +55,32 @@ func migrateDB(isUpgrade bool, configPath string) {
 		return
 	}
 
-	if isUpgrade {
-		mig.Up()
-	} else {
-		mig.Down()
+	switch state {
+	case "up":
+		err = mig.Up()
+		if err != nil && err.Error() != "no change" {
+			log.Fatal(err)
+		}
+		log.Println("migrate up has done")
+	case "down":
+		err = mig.Down()
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Println("migrate down has done")
+	case "drop":
+		err = mig.Drop()
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Println("migrate drop has done")
+	case "steps":
+		err = mig.Steps(steps)
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Println("migration with steps has done")
+	default:
+		log.Fatal("nothing")
 	}
 }

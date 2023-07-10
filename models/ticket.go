@@ -1,8 +1,6 @@
 package models
 
 import (
-	"time"
-
 	"gorm.io/gorm"
 )
 
@@ -11,9 +9,8 @@ type Ticket struct {
 	UserID     uint
 	UnitPrice  int
 	Count      int
-	FlightID   int
-	Status     string `gorm:"type:varchar(10)"`
-	CreatedAt  time.Time
+	FlightID   uint
+	Status     string      `gorm:"type:varchar(10)"`
 	User       User        `gorm:"foreignkey:UserID"`
 	Flight     Flight      `gorm:"foreignkey:FlightID"`
 	Passengers []Passenger `gorm:"many2many:ticket_passengers;"`
