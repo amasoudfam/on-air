@@ -66,6 +66,18 @@ func SetupServer(cfg *config.Config, db *gorm.DB, redis *redis.Client, port stri
 	}
 
 	e.GET("/tickets", Ticket.GetTickets, authMiddleware.AuthMiddleware)
+	passenger := &handlers.Passenger{
+		DB: db,
+	}
+
+	e.GET("/passenger", passenger.Get, authMiddleware.AuthMiddleware)
+	e.POST("/passenger", passenger.Create, authMiddleware.AuthMiddleware)
+
+	ticketPDF := &handlers.TicketPDF{
+		DB: db,
+	}
+
+	e.GET("/ticketPDF", ticketPDF.Get, authMiddleware.AuthMiddleware)
 
 	return e.Start(fmt.Sprintf(":%s", port))
 }
