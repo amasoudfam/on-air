@@ -166,12 +166,12 @@ func (t *TicketPDF) Get(ctx echo.Context) error {
 
 	ticket, err := repository.GetTicket(t.DB, userID, ticketID)
 	if err != nil {
-		return ctx.NoContent(http.StatusInternalServerError)
+		return ctx.JSON(http.StatusInternalServerError, "Internal error")
 	}
 
 	result, err := generate_output(ticket)
 	if err != nil {
-		return ctx.NoContent(http.StatusInternalServerError)
+		return ctx.JSON(http.StatusInternalServerError, "Internal error")
 	}
 
 	ctx.Response().Header().Set("Content-Type", "application/pdf")
