@@ -52,7 +52,7 @@ func SetupServer(cfg *config.Config, db *gorm.DB, redis *redis.Client, port stri
 		JWT: &cfg.JWT,
 	}
 
-	e.POST("/ticket", ticket.Reserve)
+	e.POST("/ticket", ticket.Reserve, authMiddleware.AuthMiddleware)
 	e.GET("/ticket", ticket.GetTickets, authMiddleware.AuthMiddleware)
 
 	payment := &handlers.Payment{
@@ -60,8 +60,8 @@ func SetupServer(cfg *config.Config, db *gorm.DB, redis *redis.Client, port stri
 		IPG: &cfg.IPG,
 	}
 
-	e.POST("/Payment/pay", payment.Pay)
-	e.POST("/Payment/callBack", payment.CallBack)
+	e.POST("/Payment/pay", payment.Pay, authMiddleware.AuthMiddleware)
+	e.POST("/Payment/callBack", payment.CallBack, authMiddleware.AuthMiddleware)
 
 	flight := &handlers.Flight{
 		Redis: redis,
