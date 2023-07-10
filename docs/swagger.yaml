@@ -158,7 +158,7 @@ paths:
           description: Unauthorized
         '500':
           description: Internal server error
-  /payment:
+  /payment/pay:
     post:
       summary: Create a new request pay
       tags:
@@ -186,7 +186,8 @@ paths:
           description: Unauthorized
         '500':
           description: Internal server error
-    get:
+  /payment/callBack: 
+    post:
       summary: call back url to verify
       tags:
         - Payments
