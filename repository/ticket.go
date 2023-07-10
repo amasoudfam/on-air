@@ -61,6 +61,7 @@ func GetExpiredTickets(db *gorm.DB) ([]models.Ticket, error) {
 	}
 	return tickets, nil
 }
+
 func GetTicket(db *gorm.DB, userID int, ticketID int) (models.Ticket, error) {
 	var ticket models.Ticket
 	err := db.Model(&models.Ticket{}).

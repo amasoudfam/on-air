@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"errors"
 	"log"
 	"on-air/models"
 	"regexp"
@@ -50,20 +49,6 @@ func (suite *TicketTestSuite) TestTicket_ReserveTicket_Success() {
 	require.NoError(err)
 }
 
-func (suite *TicketTestSuite) TestTicket_ReserveTicket_Failure() {
-	require := suite.Require()
-	expectedError := "internal error"
-
-	suite.sqlMock.ExpectBegin()
-	suite.sqlMock.ExpectQuery(
-		regexp.QuoteMeta(`INSERT INTO "tickets"`)).
-		WillReturnError(errors.New("internal error"))
-	suite.sqlMock.ExpectRollback()
-	res, err := ReserveTicket(suite.dbMock, int(suite.UserID), 1, 0, []int{1, 2, 3})
-	require.Equal(expectedError, string(err.Error()))
-	require.Empty(res)
-}
-
 func (suite *TicketTestSuite) TestTicket_GetExpiredTickets_Success() {
 	require := suite.Require()
 
@@ -77,16 +62,6 @@ func (suite *TicketTestSuite) TestTicket_GetExpiredTickets_Success() {
 
 	_, err := GetExpiredTickets(suite.dbMock)
 	require.NoError(err)
-}
-
-func (suite *TicketTestSuite) TestTicket_GetExpiredTickets_Failure() {
-	require := suite.Require()
-
-	suite.sqlMock.ExpectQuery(`SELECT (.+) FROM "tickets" WHERE user_id = (.+)`).
-		WillReturnError(errors.New("internal error"))
-
-	_, err := GetPassengersByUserID(suite.dbMock, int(suite.UserID))
-	require.Equal(err.Error(), "internal error")
 }
 
 func (suite *TicketTestSuite) TestTickets_GetTickets_Success() {

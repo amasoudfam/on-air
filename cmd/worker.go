@@ -69,7 +69,7 @@ func Run(worker *config.Worker, ctx context.Context, db *gorm.DB) {
 					return err
 				}
 
-				_, err = apiMock.Refund(flight.Number, 1)
+				_, err = apiMock.Refund(flight.Number, ticket.Count)
 
 				//err
 
