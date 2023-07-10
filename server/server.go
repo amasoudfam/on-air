@@ -47,7 +47,23 @@ func SetupServer(cfg *config.Config, db *gorm.DB, redis *redis.Client, port stri
 	e.POST("/auth/login", auth.Login)
 	e.POST("/auth/register", auth.Register)
 
-	Flight := &handlers.Flight{
+	ticket := &handlers.Ticket{
+		DB:  db,
+		JWT: &cfg.JWT,
+	}
+
+	e.POST("/ticket", ticket.Reserve, authMiddleware.AuthMiddleware)
+	e.GET("/ticket", ticket.GetTickets, authMiddleware.AuthMiddleware)
+
+	payment := &handlers.Payment{
+		DB:  db,
+		IPG: &cfg.IPG,
+	}
+
+	e.POST("/Payment/pay", payment.Pay, authMiddleware.AuthMiddleware)
+	e.POST("/Payment/callBack", payment.CallBack, authMiddleware.AuthMiddleware)
+
+	flight := &handlers.Flight{
 		Redis: redis,
 		APIMockClient: &services.APIMockClient{
 			Client:  &http.Client{},
@@ -58,14 +74,8 @@ func SetupServer(cfg *config.Config, db *gorm.DB, redis *redis.Client, port stri
 		Cache: &cfg.Redis,
 	}
 
-	e.GET("/flights", Flight.List)
+	e.GET("/flights", flight.List)
 
-	Ticket := &handlers.Ticket{
-		DB:  db,
-		JWT: &cfg.JWT,
-	}
-
-	e.GET("/tickets", Ticket.GetTickets, authMiddleware.AuthMiddleware)
 	passenger := &handlers.Passenger{
 		DB: db,
 	}

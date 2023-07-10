@@ -3,6 +3,7 @@ package repository
 import (
 	"log"
 	"on-air/models"
+	"regexp"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -33,7 +34,34 @@ func (suite *TicketTestSuite) SetupSuite() {
 	}
 
 	suite.sqlMock = sqlMock
-	suite.UserID = uint(1)
+	suite.UserID = 3
+}
+
+func (suite *TicketTestSuite) TestTicket_ReserveTicket_Success() {
+	require := suite.Require()
+
+	suite.sqlMock.ExpectBegin()
+	suite.sqlMock.ExpectQuery(
+		regexp.QuoteMeta(`INSERT INTO "tickets"`)).
+		WillReturnRows(sqlmock.NewRows([]string{"id"}))
+	suite.sqlMock.ExpectCommit()
+	_, err := ReserveTicket(suite.dbMock, int(suite.UserID), 1, 10000, []int{1, 2, 3})
+	require.NoError(err)
+}
+
+func (suite *TicketTestSuite) TestTicket_GetExpiredTickets_Success() {
+	require := suite.Require()
+
+	mockPassenger := suite.sqlMock.NewRows(
+		[]string{
+			"user_id", "unit_price", "count", "flight_id", "status",
+		}).
+		AddRow("1", "100000", "9", "1", "Expired")
+	suite.sqlMock.ExpectQuery(`SELECT (.+) FROM "tickets" WHERE user_id = (.+)`).
+		WillReturnRows(mockPassenger)
+
+	_, err := GetExpiredTickets(suite.dbMock)
+	require.NoError(err)
 }
 
 func (suite *TicketTestSuite) TestTickets_GetTickets_Success() {

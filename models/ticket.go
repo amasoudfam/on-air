@@ -15,3 +15,11 @@ type Ticket struct {
 	Flight     Flight      `gorm:"foreignkey:FlightID"`
 	Passengers []Passenger `gorm:"many2many:ticket_passengers;"`
 }
+
+type TicketStatus string
+
+const (
+	Reserved      TicketStatus = "Reserved"
+	TicketPaid    TicketStatus = "Paid"
+	TicketExpired TicketStatus = "Expired"
+)
