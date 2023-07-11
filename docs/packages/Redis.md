@@ -142,3 +142,9 @@ func main() {
  fmt.Println("List values:", values)
 }
 ```
+
+## What we do with this package
+
+We utilize this package to cache flights when we receive the first flight response from the FlightsApiMock. The package allows us to store this information in our local database using the go-redis library. This library is an open-source project that facilitates caching and data storage in memory or on disk via the REDIS protocol.
+
+After caching the flights, we retrieve them from the Redis cache until the cache timeout period expires. If the flights are not found in the Redis cache, we initiate a new request to retrieve flights from the FlightsApiMock and store them in the cache again.
