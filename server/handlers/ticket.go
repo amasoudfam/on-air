@@ -12,9 +12,9 @@ import (
 )
 
 type Ticket struct {
-	DB      *gorm.DB
-	JWT     *config.JWT
-	apiMock *services.APIMockClient
+	DB            *gorm.DB
+	JWT           *config.JWT
+	APIMockClient *services.APIMockClient
 }
 
 type ReserveRequest struct {
@@ -38,7 +38,7 @@ func (t *Ticket) Reserve(ctx echo.Context) error {
 
 	userId := ctx.Get("user_id").(int)
 
-	var flighInfo, err = t.apiMock.GetFlight(req.FlightNumber)
+	var flighInfo, err = t.APIMockClient.GetFlight(req.FlightNumber)
 
 	if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, "Internal server")
@@ -56,7 +56,7 @@ func (t *Ticket) Reserve(ctx echo.Context) error {
 		return ctx.JSON(http.StatusInternalServerError, "Internal server Error")
 	}
 
-	flightReserve, err := t.apiMock.Reserve(req.FlightNumber, len(req.PassengerIDs))
+	flightReserve, err := t.APIMockClient.Reserve(req.FlightNumber, len(req.PassengerIDs))
 
 	if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, "Internal server Error")
@@ -75,7 +75,7 @@ func (t *Ticket) Reserve(ctx echo.Context) error {
 	)
 
 	if err != nil {
-		t.apiMock.Refund(req.FlightNumber, len(req.PassengerIDs))
+		t.APIMockClient.Refund(req.FlightNumber, len(req.PassengerIDs))
 		return ctx.JSON(http.StatusInternalServerError, "Internal server Error")
 	}
 

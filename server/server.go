@@ -50,6 +50,12 @@ func SetupServer(cfg *config.Config, db *gorm.DB, redis *redis.Client, port stri
 	ticket := &handlers.Ticket{
 		DB:  db,
 		JWT: &cfg.JWT,
+		APIMockClient: &services.APIMockClient{
+			Client:  &http.Client{},
+			Breaker: &breaker.Breaker{},
+			BaseURL: cfg.Services.ApiMock.BaseURL,
+			Timeout: cfg.Services.ApiMock.Timeout,
+		},
 	}
 
 	e.POST("/ticket", ticket.Reserve, authMiddleware.AuthMiddleware)
