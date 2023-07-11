@@ -128,30 +128,21 @@ paths:
       summary: Create a new Ticket
       tags:
         - Tickets
-      parameters:
-        - in: query
-          name: flight_number
-          required: true
-          schema:
-            type: string
-          description: The flight_number of the ticket
-        - in: query
-          name: passengers
-          required: true
-          schema:
-            type: array
-            items:
-              type: integer
       requestBody:
         description: JSON object containing Ticket information
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ReserveResponse'
+              $ref: '#/components/schemas/ReserveRequest'
       responses:
         '201':
           description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: "string"
+                $ref: "#/components/schemas/ReserveResponse"
         '400':
           description: Bad request
         '401':
@@ -311,6 +302,18 @@ components:
         - first_name
         - last_name
         - gender
+    ReserveRequest:
+      type: "object"
+      properties:
+        flight_number:
+          type: "string"
+          example: "123131454"
+        passengers:
+          type: "array"
+          items:
+            type: integer
+      required:
+        - flight_number
     ReserveResponse:
       type: "object"
       properties:
