@@ -141,7 +141,7 @@ func seed(configPath string, fakeFlag bool) error {
 			UnitPrice:  2100000,
 			Count:      2,
 			FlightID:   flight.ID,
-			Status:     "complete",
+			Status:     string(models.Reserved),
 			Flight:     flight,
 			Passengers: passengers,
 		}
