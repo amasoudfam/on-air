@@ -136,16 +136,23 @@ func (t *Ticket) Reserve(ctx echo.Context) error {
 		return ctx.JSON(http.StatusInternalServerError, "Internal server")
 	}
 
-	flight, err := repository.AddFlight(t.DB,
-		flightInfo.Number,
-		flightInfo.Origin,
-		flightInfo.Destination,
-		flightInfo.Airplane,
-		flightInfo.Airline,
-		flightInfo.Penalties,
-		flightInfo.StartedAt,
-		flightInfo.FinishedAt,
-	)
+	flight, err := repository.FindFlight(t.DB, flightInfo.Number)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, err.Error())
+	}
+
+	if flight == nil {
+		flight, err = repository.AddFlight(t.DB,
+			flightInfo.Number,
+			flightInfo.Origin,
+			flightInfo.Destination,
+			flightInfo.Airplane,
+			flightInfo.Airline,
+			flightInfo.Penalties,
+			flightInfo.StartedAt,
+			flightInfo.FinishedAt,
+		)
+	}
 
 	if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, "Internal server Error")

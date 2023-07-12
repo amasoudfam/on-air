@@ -66,11 +66,6 @@ type RegisterRequest struct {
 }
 
 type RegisterResponse struct {
-	AccessToken string `json:"access_token"`
-	TokenType   string `json:"token_type" binding:"required"`
-}
-
-type RegisterRes struct {
 	Status  bool
 	Message string
 }
@@ -92,7 +87,7 @@ func (a *Auth) Register(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, err.Error())
 	}
 
-	res := RegisterRes{
+	res := RegisterResponse{
 		Status:  true,
 		Message: "Registration completed successfully.",
 	}
