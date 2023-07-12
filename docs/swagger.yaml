@@ -3,7 +3,7 @@ info:
   title: on-air APIs
   version: 1.0.0
 servers:
-  - url: https://localhost:8080
+  - url: http://localhost:2000
     description: on-air project
 paths:
   /flights:
@@ -123,7 +123,7 @@ paths:
           description: Unauthorized
         '500':
           description: Internal server error
-  /tickets/Reserve:
+  /tickets/reserve:
     post:
       summary: Create a new Ticket
       tags:

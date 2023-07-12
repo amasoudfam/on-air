@@ -139,9 +139,6 @@ func (t *Ticket) Reserve(ctx echo.Context) error {
 	}
 
 	flight, err := repository.FindFlight(t.DB, flightInfo.Number)
-	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, err.Error())
-	}
 
 	if flight == nil {
 		flight, err = repository.AddFlight(t.DB,
