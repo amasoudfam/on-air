@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"gorm.io/datatypes"
 )
 
 // seedCmd represents the seed command
@@ -89,6 +90,21 @@ func seed(configPath string, fakeFlag bool) error {
 			Airline:    "Singapore Airlines",
 			StartedAt:  time.Now().Add(time.Hour * 74),
 			FinishedAt: time.Now().Add(time.Hour * 80),
+			Penalties: datatypes.JSON([]byte(`[{
+					"Start":   "",
+					"End":     "` + time.Now().Add(-48*time.Hour).Format(time.RFC3339) + `",
+					"Percent": 20
+				},
+				{
+					"Start":   "` + time.Now().Add(-48*time.Hour).Format(time.RFC3339) + `",
+					"End":     "` + time.Now().Add(-24*time.Hour).Format(time.RFC3339) + `",
+					"Percent": 20
+				},
+				{
+					"Start":   "` + time.Now().Add(-24*time.Hour).Format(time.RFC3339) + `",
+					"End":     "` + time.Now().Add(-1*time.Minute).Format(time.RFC3339) + `",
+					"Percent": 40
+				}]`)),
 		}
 		err = db.FirstOrCreate(&flight, models.Flight{Number: "FL005"}).Error
 		if err != nil {
@@ -125,7 +141,7 @@ func seed(configPath string, fakeFlag bool) error {
 			UnitPrice:  2100000,
 			Count:      2,
 			FlightID:   flight.ID,
-			Status:     "complete",
+			Status:     string(models.Reserved),
 			Flight:     flight,
 			Passengers: passengers,
 		}
