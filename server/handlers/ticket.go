@@ -198,3 +198,34 @@ func getPassengers(passengers []models.Passenger) []PassengerResponse {
 
 	return pass
 }
+
+type CancelRequest struct {
+	TicketID int
+}
+
+func (t *Ticket) Cancel(ctx echo.Context) error {
+
+	var req CancelRequest
+	if err := ctx.Bind(&req); err != nil {
+		return ctx.JSON(http.StatusBadRequest, "")
+	}
+
+	if err := ctx.Validate(&req); err != nil {
+		return ctx.JSON(http.StatusBadRequest, err.Error())
+	}
+
+	userID, _ := ctx.Get("user_id").(int)
+	ticket, err := repository.GetTicket(t.DB, userID, req.TicketID)
+	if err != nil {
+		return ctx.JSON(http.StatusNotFound, err.Error())
+	}
+	err = repository.ChangeTicketStatus(t.DB, ticket.ID, string(models.TicketRefund))
+
+	if err != nil {
+		return ctx.JSON(http.StatusInternalServerError, err.Error())
+	}
+
+	t.apiMock.Refund(ticket.Flight.Number, ticket.Count)
+
+	return ctx.NoContent(http.StatusOK)
+}
