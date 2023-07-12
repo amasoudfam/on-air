@@ -70,6 +70,11 @@ type RegisterResponse struct {
 	TokenType   string `json:"token_type" binding:"required"`
 }
 
+type RegisterRes struct {
+	Status  bool
+	Message string
+}
+
 func (a *Auth) Register(ctx echo.Context) error {
 	user := new(RegisterRequest)
 	if err := ctx.Bind(user); err != nil {
@@ -87,5 +92,10 @@ func (a *Auth) Register(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, err.Error())
 	}
 
-	return ctx.JSON(http.StatusCreated, nil)
+	res := RegisterRes{
+		Status:  true,
+		Message: "Registration completed successfully.",
+	}
+
+	return ctx.JSON(http.StatusCreated, res)
 }
