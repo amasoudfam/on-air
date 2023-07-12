@@ -19,6 +19,7 @@ func AddFlight(
 	start time.Time,
 	finish time.Time) (*models.Flight, error) {
 	fromCity, err := FindCityByName(db, origin)
+
 	if err != nil {
 		return nil, err
 	}

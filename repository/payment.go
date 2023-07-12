@@ -5,9 +5,8 @@ import (
 	"log"
 	"on-air/config"
 	"on-air/models"
+	"on-air/pasargad"
 	"strconv"
-
-	pasargad "github.com/pepco-api/golang-rest-sdk"
 
 	"gorm.io/gorm"
 )
@@ -134,7 +133,7 @@ func pasargadApi(ipg *config.IPG) (pasrgad *pasargad.PasargadPaymentAPI) {
 func ChangePaymentStatus(db *gorm.DB, ticketID uint, status string) error {
 	var payments []models.Payment
 
-	err := db.Model(&payments).Where("ticket_id = ?", ticketID).Error
+	err := db.Model(&payments).Where("ticket_id = ?", ticketID).Find(&payments).Error
 
 	if err != nil {
 		return err
