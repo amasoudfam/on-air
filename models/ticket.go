@@ -22,4 +22,5 @@ const (
 	Reserved      TicketStatus = "Reserved"
 	TicketPaid    TicketStatus = "Paid"
 	TicketExpired TicketStatus = "Expired"
+	TicketRefund  TicketStatus = "Refund"
 )
