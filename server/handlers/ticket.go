@@ -6,10 +6,18 @@ import (
 	"on-air/models"
 	"on-air/repository"
 	"on-air/server/services"
+	"on-air/utils"
+	"strconv"
 
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
 )
+
+type Ticket struct {
+	DB            *gorm.DB
+	JWT           *config.JWT
+	APIMockClient *services.APIMockClient
+}
 
 type CountryResponse struct {
 	Name string
@@ -104,12 +112,6 @@ func (t *Ticket) GetTickets(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, ticketResponses)
 }
 
-type Ticket struct {
-	DB            *gorm.DB
-	JWT           *config.JWT
-	APIMockClient *services.APIMockClient
-}
-
 type ReserveRequest struct {
 	FlightNumber string `json:"flight_number" binding:"required"`
 	PassengerIDs []int  `json:"passengers" binding:"required"`
@@ -197,4 +199,28 @@ func getPassengers(passengers []models.Passenger) []PassengerResponse {
 	}
 
 	return pass
+}
+
+func (t *Ticket) GetPDF(ctx echo.Context) error {
+	userID, _ := strconv.Atoi(ctx.Get("id").(string))
+	ticketID, err := strconv.Atoi(ctx.QueryParam("ticket_id"))
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, "Invalid ticket_id")
+	}
+
+	ticket, err := repository.GetTicket(t.DB, userID, ticketID)
+	if err != nil {
+		return ctx.JSON(http.StatusInternalServerError, "Internal error")
+	}
+
+	result, err := utils.GeneratePDF(ticket)
+	if err != nil {
+		return ctx.JSON(http.StatusInternalServerError, "Internal error")
+	}
+
+	ctx.Response().Header().Set("Content-Type", "application/pdf")
+	ctx.Response().Header().Set("Content-Disposition", "attachment; filename=myfile.pdf")
+	ctx.Response().Header().Set("Content-Length", strconv.Itoa(len(result)))
+
+	return ctx.Blob(http.StatusOK, "application/pdf", result)
 }
