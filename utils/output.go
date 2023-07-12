@@ -1,25 +1,16 @@
-package handlers
+package utils
 
 import (
 	"bytes"
-	"net/http"
 	"on-air/models"
-	"on-air/repository"
 	"strconv"
 	"time"
-
-	"github.com/labstack/echo/v4"
-	"gorm.io/gorm"
 
 	"github.com/jung-kurt/gofpdf"
 	qrcode "github.com/skip2/go-qrcode"
 )
 
-type TicketPDF struct {
-	DB *gorm.DB
-}
-
-func generate_output(ticket models.Ticket) ([]byte, error) {
+func GeneratePDF(ticket models.Ticket) ([]byte, error) {
 	pdf := gofpdf.New("P", "mm", "A4", "")
 	pdf.SetTextColor(0, 0, 0)
 	ticketWidth := 175.0
@@ -147,7 +138,6 @@ func generate_output(ticket models.Ticket) ([]byte, error) {
 		ticketY += ticketHeight + 5
 		qrLocation += ticketHeight + 5
 	}
-
 	var buf bytes.Buffer
 	err := pdf.Output(&buf)
 	if err != nil {
@@ -155,28 +145,4 @@ func generate_output(ticket models.Ticket) ([]byte, error) {
 	}
 
 	return buf.Bytes(), nil
-}
-
-func (t *TicketPDF) Get(ctx echo.Context) error {
-	userID, _ := strconv.Atoi(ctx.Get("id").(string))
-	ticketID, err := strconv.Atoi(ctx.QueryParam("ticket_id"))
-	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, "Invalid ticket_id")
-	}
-
-	ticket, err := repository.GetTicket(t.DB, userID, ticketID)
-	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, "Internal error")
-	}
-
-	result, err := generate_output(ticket)
-	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, "Internal error")
-	}
-
-	ctx.Response().Header().Set("Content-Type", "application/pdf")
-	ctx.Response().Header().Set("Content-Disposition", "attachment; filename=myfile.pdf")
-	ctx.Response().Header().Set("Content-Length", strconv.Itoa(len(result)))
-
-	return ctx.Blob(http.StatusOK, "application/pdf", result)
 }

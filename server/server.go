@@ -60,14 +60,15 @@ func SetupServer(cfg *config.Config, db *gorm.DB, redis *redis.Client, port stri
 
 	e.GET("/tickets", ticket.GetTickets, authMiddleware.AuthMiddleware)
 	e.POST("/tickets/reserve", ticket.Reserve, authMiddleware.AuthMiddleware)
+	e.GET("/tickets/pdf", ticket.GetPDF, authMiddleware.AuthMiddleware)
 
 	payment := &handlers.Payment{
 		DB:  db,
 		IPG: &cfg.IPG,
 	}
 
-	e.POST("/Payment/pay", payment.Pay, authMiddleware.AuthMiddleware)
-	e.POST("/Payment/callBack", payment.CallBack, authMiddleware.AuthMiddleware)
+	e.POST("/payments/pay", payment.Pay, authMiddleware.AuthMiddleware)
+	e.POST("/payments/callBack", payment.CallBack, authMiddleware.AuthMiddleware)
 
 	flight := &handlers.Flight{
 		Redis: redis,
@@ -88,12 +89,6 @@ func SetupServer(cfg *config.Config, db *gorm.DB, redis *redis.Client, port stri
 
 	e.GET("/passengers", passenger.Get, authMiddleware.AuthMiddleware)
 	e.POST("/passengers", passenger.Create, authMiddleware.AuthMiddleware)
-
-	ticketPDF := &handlers.TicketPDF{
-		DB: db,
-	}
-
-	e.GET("/ticketPDF", ticketPDF.Get, authMiddleware.AuthMiddleware)
 
 	return e.Start(fmt.Sprintf(":%s", port))
 }
