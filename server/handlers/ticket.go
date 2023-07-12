@@ -116,7 +116,7 @@ type ReserveRequest struct {
 }
 
 type ReserveResponse struct {
-	Status string `json:"status" binding:"required"`
+	TicketId int `json:"ticket_id" binding:"required"`
 }
 
 func (t *Ticket) Reserve(ctx echo.Context) error {
@@ -180,7 +180,7 @@ func (t *Ticket) Reserve(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, ReserveResponse{
-		Status: ticket.Status,
+		TicketId: int(ticket.ID),
 	})
 }
 

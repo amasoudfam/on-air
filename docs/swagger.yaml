@@ -123,7 +123,7 @@ paths:
           description: Unauthorized
         '500':
           description: Internal server error
-  /ticket:
+  /tickets/Reserve:
     post:
       summary: Create a new Ticket
       tags:
@@ -318,10 +318,8 @@ components:
       type: "object"
       properties:
         status:
-          type: "string"
-          example: "Reserved"
-      required:
-        - status
+          type: "integer"
+          example: "ticket_id"
     PayResponse:
       type: "object"
       properties:
