@@ -20,7 +20,10 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/suite"
+	"gorm.io/datatypes"
 )
+
+var penalties datatypes.JSON = datatypes.JSON([]byte(`{"test":"on-air"}`))
 
 type FlightHandlerTestSuite struct {
 	suite.Suite
@@ -37,7 +40,7 @@ func (suite *FlightHandlerTestSuite) CallHandler(queryString string) (*httptest.
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	res := httptest.NewRecorder()
 	ctx := suite.e.NewContext(req, res)
-	err := suite.flight.List(ctx)
+	err := suite.flight.GetFlights(ctx)
 	return res, err
 }
 
@@ -76,7 +79,7 @@ func (suite *FlightHandlerTestSuite) TestGetFlightsList_WithCache_Success() {
 		},
 	}
 
-	expectedRes := ListResponse{
+	expectedRes := GetFlightsResponse{
 		Flights: flights,
 	}
 
@@ -98,8 +101,9 @@ func (suite *FlightHandlerTestSuite) TestGetFlightsList_WithoutCache_Success() {
 	expectedStatusCode := http.StatusOK
 	flights := []services.FlightResponse{
 		{
-			Number:  "FL001",
-			Airline: "AirlineA",
+			Number:    "FL001",
+			Airline:   "AirlineA",
+			Penalties: penalties,
 		},
 	}
 
@@ -120,7 +124,7 @@ func (suite *FlightHandlerTestSuite) TestGetFlightsList_WithoutCache_Success() {
 	res, err := suite.CallHandler(queryParams)
 	require.NoError(err)
 	body, _ := io.ReadAll(res.Body)
-	var response ListResponse
+	var response GetFlightsResponse
 	err = json.Unmarshal(body, &response)
 	require.NoError(err)
 	require.Equal(flights, response.Flights)

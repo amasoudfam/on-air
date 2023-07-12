@@ -34,7 +34,13 @@ type FlightDetails struct {
 	FinishedAt    time.Time
 }
 
-type ListRequest struct {
+type Penalties struct {
+	Start   string
+	End     string
+	Percent int
+}
+
+type GetFlightsRequest struct {
 	Origin        string `query:"origin" validate:"required"`
 	Destination   string `query:"destination" validate:"required"`
 	Date          string `query:"date" validate:"required,datetime=2006-01-02"`
@@ -45,14 +51,15 @@ type ListRequest struct {
 	EmptyCapacity bool   `query:"empty_capacity"`
 	OrderBy       string `query:"order_by"`
 	SortOrder     string `query:"sort_order"`
+	Penalties     []Penalties
 }
 
-type ListResponse struct {
+type GetFlightsResponse struct {
 	Flights []services.FlightResponse `json:"flights"`
 }
 
-func (f *Flight) List(ctx echo.Context) error {
-	var req ListRequest
+func (f *Flight) GetFlights(ctx echo.Context) error {
+	var req GetFlightsRequest
 	if err := ctx.Bind(&req); err != nil {
 		return ctx.JSON(http.StatusBadRequest, "Invalid query parameters")
 	}
@@ -119,7 +126,7 @@ func (f *Flight) List(ctx echo.Context) error {
 		}
 	}
 
-	return ctx.JSON(http.StatusOK, ListResponse{
+	return ctx.JSON(http.StatusOK, GetFlightsResponse{
 		Flights: flights,
 	})
 }
