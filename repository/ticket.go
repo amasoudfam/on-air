@@ -10,9 +10,9 @@ import (
 func ReserveTicket(db *gorm.DB, userID int, flightID int, unitPrice int, passengerIDs []int) (*models.Ticket, error) {
 	var passengers []models.Passenger
 
-	result := db.Model(&passengers).Where("ID IN ?", passengerIDs)
-	if result.RowsAffected == 0 || result.RowsAffected != int64(len(passengerIDs)) {
-		return nil, result.Error
+	err := db.Where("id IN ?", passengerIDs).Find(&passengers).Error
+	if err != nil {
+		return nil, err
 	}
 
 	ticket := models.Ticket{
@@ -24,8 +24,8 @@ func ReserveTicket(db *gorm.DB, userID int, flightID int, unitPrice int, passeng
 		Status:     string(models.Reserved),
 	}
 
-	result = db.Create(&ticket)
-	if err := result.Error; err != nil {
+	err = db.Create(&ticket).Error
+	if err != nil {
 		return nil, err
 	}
 
@@ -35,7 +35,7 @@ func ReserveTicket(db *gorm.DB, userID int, flightID int, unitPrice int, passeng
 func ChangeTicketStatus(db *gorm.DB, id uint, status string) error {
 	var ticket models.Ticket
 
-	err := db.First(&ticket, "ID = ?", id).Error
+	err := db.First(&ticket, "id = ?", id).Error
 	if err != nil {
 		return err
 	}
@@ -54,11 +54,11 @@ func GetExpiredTickets(db *gorm.DB) ([]models.Ticket, error) {
 	var tickets []models.Ticket
 
 	err := db.Model(&tickets).
-		Where("Status = ? AND CreatedAt > ?", string(models.Reserved), time.Now().Add(-15*time.Minute)).Error
-
+		Where("status = ? AND created_at < ?", string(models.Reserved), time.Now().Add(-15*time.Minute)).Find(&tickets).Error
 	if err != nil {
 		return tickets, err
 	}
+
 	return tickets, nil
 }
 

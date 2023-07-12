@@ -50,10 +50,16 @@ func SetupServer(cfg *config.Config, db *gorm.DB, redis *redis.Client, port stri
 	ticket := &handlers.Ticket{
 		DB:  db,
 		JWT: &cfg.JWT,
+		APIMockClient: &services.APIMockClient{
+			Client:  &http.Client{},
+			Breaker: &breaker.Breaker{},
+			BaseURL: cfg.Services.ApiMock.BaseURL,
+			Timeout: cfg.Services.ApiMock.Timeout,
+		},
 	}
 
-	e.POST("/ticket", ticket.Reserve, authMiddleware.AuthMiddleware)
-	e.GET("/ticket", ticket.GetTickets, authMiddleware.AuthMiddleware)
+	e.GET("/tickets", ticket.GetTickets, authMiddleware.AuthMiddleware)
+	e.POST("/tickets/reserve", ticket.Reserve, authMiddleware.AuthMiddleware)
 
 	payment := &handlers.Payment{
 		DB:  db,
@@ -74,14 +80,14 @@ func SetupServer(cfg *config.Config, db *gorm.DB, redis *redis.Client, port stri
 		Cache: &cfg.Redis,
 	}
 
-	e.GET("/flights", flight.List)
+	e.GET("/flights", flight.GetFlights)
 
 	passenger := &handlers.Passenger{
 		DB: db,
 	}
 
-	e.GET("/passenger", passenger.Get, authMiddleware.AuthMiddleware)
-	e.POST("/passenger", passenger.Create, authMiddleware.AuthMiddleware)
+	e.GET("/passengers", passenger.Get, authMiddleware.AuthMiddleware)
+	e.POST("/passengers", passenger.Create, authMiddleware.AuthMiddleware)
 
 	ticketPDF := &handlers.TicketPDF{
 		DB: db,
