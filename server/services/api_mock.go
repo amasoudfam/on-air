@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/eapache/go-resiliency/breaker"
+	"gorm.io/datatypes"
 )
 
 type APIMockClient struct {
@@ -19,17 +20,26 @@ type APIMockClient struct {
 	Timeout time.Duration
 }
 
+type Penalties struct {
+	Start   string
+	End     string
+	Percent int
+}
+
+type Penalty struct {
+}
 type FlightResponse struct {
-	Number        string    `json:"number"`
-	Airplane      string    `json:"airplane"`
-	Airline       string    `json:"airline"`
-	Price         int       `json:"price"`
-	Origin        string    `json:"origin"`
-	Destination   string    `json:"destination"`
-	Capacity      int       `json:"capacity"`
-	EmptyCapacity int       `json:"empty_capacity"`
-	StartedAt     time.Time `json:"started_at"`
-	FinishedAt    time.Time `json:"finished_at"`
+	Number        string         `json:"number"`
+	Airplane      string         `json:"airplane"`
+	Airline       string         `json:"airline"`
+	Price         int            `json:"price"`
+	Origin        string         `json:"origin"`
+	Destination   string         `json:"destination"`
+	Capacity      int            `json:"capacity"`
+	EmptyCapacity int            `json:"empty_capacity"`
+	StartedAt     time.Time      `json:"started_at"`
+	FinishedAt    time.Time      `json:"finished_at"`
+	Penalties     datatypes.JSON `json:"penalties"`
 }
 
 type City struct {

@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"on-air/repository"
 	"on-air/utils"
-	"strconv"
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/labstack/echo/v4"
@@ -22,8 +21,13 @@ type CreateRequest struct {
 	Gender       string `json:"gender" binding:"required" validate:"required"`
 }
 
+type CreateResponse struct {
+	Status  bool
+	Message string
+}
+
 func (p *Passenger) Create(ctx echo.Context) error {
-	userID, _ := strconv.Atoi(ctx.Get("id").(string))
+	userID, _ := ctx.Get("user_id").(int)
 	var req CreateRequest
 	if err := ctx.Bind(&req); err != nil {
 		return ctx.JSON(http.StatusBadRequest, "Failed to bind")
@@ -54,7 +58,10 @@ func (p *Passenger) Create(ctx echo.Context) error {
 		}
 	}
 
-	return ctx.JSON(http.StatusCreated, nil)
+	return ctx.JSON(http.StatusCreated, CreateResponse{
+		Status:  true,
+		Message: "New user create successfully",
+	})
 }
 
 type GetResponse struct {
@@ -65,7 +72,7 @@ type GetResponse struct {
 }
 
 func (p *Passenger) Get(ctx echo.Context) error {
-	userID, _ := strconv.Atoi(ctx.Get("id").(string))
+	userID, _ := ctx.Get("user_id").(int)
 	passengers, err := repository.GetPassengersByUserID(p.DB, userID)
 
 	if err != nil {

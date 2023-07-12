@@ -2,7 +2,9 @@ package repository
 
 import (
 	"on-air/models"
+	"time"
 
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
@@ -11,20 +13,17 @@ func AddFlight(
 	flightNumber string,
 	origin string,
 	destination string,
-	airLine string,
-	airPlane string) (*models.Flight, error) {
-
-	var fromCity models.City
-	var toCity models.City
-
-	err := db.First(&fromCity, "Name = ?", origin).Error
-
+	airline string,
+	airplane string,
+	penalties datatypes.JSON,
+	start time.Time,
+	finish time.Time) (*models.Flight, error) {
+	fromCity, err := FindCityByName(db, origin)
 	if err != nil {
 		return nil, err
 	}
 
-	err = db.First(&toCity, "Name = ?", destination).Error
-
+	toCity, err := FindCityByName(db, destination)
 	if err != nil {
 		return nil, err
 	}
@@ -33,8 +32,11 @@ func AddFlight(
 		Number:     flightNumber,
 		FromCityID: fromCity.ID,
 		ToCityID:   toCity.ID,
-		Airplane:   airPlane,
-		Airline:    airLine,
+		Airplane:   airplane,
+		Airline:    airline,
+		Penalties:  penalties,
+		StartedAt:  start,
+		FinishedAt: finish,
 	}
 
 	result := db.Create(&flight)
@@ -48,9 +50,9 @@ func AddFlight(
 func FindFlight(db *gorm.DB, flightNumber string) (*models.Flight, error) {
 	var flight models.Flight
 
-	err := db.First(&flight, "Number = ?", flightNumber).Error
+	err := db.Where("Number = ?", flightNumber).First(&flight).Error
 	if err != nil {
-		return &models.Flight{}, err
+		return nil, err
 	}
 
 	return &flight, nil
@@ -59,7 +61,7 @@ func FindFlight(db *gorm.DB, flightNumber string) (*models.Flight, error) {
 func FindFlightById(db *gorm.DB, id int) (*models.Flight, error) {
 	var flight models.Flight
 
-	err := db.First(&flight, "ID = ?", id).Error
+	err := db.Where("ID = ?", id).First(&flight).Error
 
 	if err != nil {
 		return nil, err
