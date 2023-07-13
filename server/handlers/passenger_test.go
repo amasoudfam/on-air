@@ -123,7 +123,7 @@ func (suite *PassengerTestSuite) TestCreatePassenger_CreatePassenger_Success() {
 func (suite *PassengerTestSuite) TestCreatePassenger_CreatePassenger_Failure() {
 	require := suite.Require()
 	expectedStatusCode := http.StatusInternalServerError
-	expectedBody := "\"Internal error\"\n"
+	expectedBody := "\"Internal server error\"\n"
 
 	suite.e.Binder = &MockBinder{}
 
@@ -140,7 +140,7 @@ func (suite *PassengerTestSuite) TestCreatePassenger_CreatePassenger_Failure() {
 		  INSERT INTO "passengers" ("created_at","updated_at","deleted_at","user_id","national_code","first_name","last_name","gender")
 		  VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
 		 `)).
-		WillReturnError(errors.New("Internal error"))
+		WillReturnError(errors.New("Internal server error"))
 	suite.sqlMock.ExpectRollback()
 
 	requestBody := `{"national_code": "0123456789"}`
@@ -190,7 +190,7 @@ func (suite *PassengerTestSuite) TestCreatePassenger_CreatePassenger_Duplicate_F
 func (suite *PassengerTestSuite) TestCreatePassenger_InvalidBody_Failure() {
 	require := suite.Require()
 	expectedStatusCode := http.StatusBadRequest
-	expectedBody := "\"Failed to bind\"\n"
+	expectedBody := "\"Bind Error\"\n"
 
 	requestBody := `{"national_code: "1000011111", "first_name": "name", "last_name": "lname", "gender": "f"}`
 
@@ -204,7 +204,7 @@ func (suite *PassengerTestSuite) TestCreatePassenger_InvalidBody_Failure() {
 func (suite *PassengerTestSuite) TestCreatePassenger_InvalidValue_Failure() {
 	require := suite.Require()
 	expectedStatusCode := http.StatusBadRequest
-	expectedBody := "\"Failed to bind\"\n"
+	expectedBody := "\"Bind Error\"\n"
 
 	requestBody := `{"national_code": 1382122489, "firstname": "", "last_name": "lname", "gender": "f"}`
 
@@ -218,14 +218,14 @@ func (suite *PassengerTestSuite) TestCreatePassenger_InvalidValue_Failure() {
 func (suite *PassengerTestSuite) TestCreatePassenger_InvalidKey_Failure() {
 	require := suite.Require()
 	expectedStatusCode := http.StatusBadRequest
-	expectedBody := "\"Invalid json key\"\n"
+	expectedBody := "Error:Field validation for 'NationalCode'"
 
 	suite.e.Binder = &MockBinder{}
 	requestBody := `{"national_code": "1000011111", "firstname": "name", "last_name": "lname", "gender": "f"}`
 
 	res, err := suite.CallCreateHandler(requestBody)
-	body, _ := io.ReadAll(res.Body)
-	require.Equal(expectedBody, string(body))
+	body, err := io.ReadAll(res.Body)
+	require.Contains(string(body), expectedBody)
 	require.NoError(err)
 	require.Equal(expectedStatusCode, res.Code)
 }
@@ -272,11 +272,11 @@ func (suite *PassengerTestSuite) TestGetPassenger_Success() {
 
 func (suite *PassengerTestSuite) TestGetPassenger_Failure() {
 	require := suite.Require()
-	expectedBody := "\"Internal error\"\n"
+	expectedBody := "\"Internal server error\"\n"
 	expectedStatusCode := http.StatusInternalServerError
 
 	suite.sqlMock.ExpectQuery(`SELECT (.+) FROM "passengers" WHERE user_id = (.+)`).
-		WillReturnError(errors.New("Internal error"))
+		WillReturnError(errors.New("Internal server error"))
 
 	res, _ := suite.CallGetHandler()
 	body, _ := io.ReadAll(res.Body)

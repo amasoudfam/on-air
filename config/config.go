@@ -56,8 +56,9 @@ type Worker struct {
 	Limit       int
 }
 type Service struct {
-	BaseURL string
-	Timeout time.Duration
+	BaseURL          string
+	Timeout          time.Duration
+	CitiesSyncPeriod time.Duration
 }
 
 type Services struct {
@@ -109,8 +110,9 @@ func InitConfig(configPath string) (*Config, error) {
 		},
 		Services: Services{
 			ApiMock: Service{
-				BaseURL: viper.GetString("services.flights.url"),
-				Timeout: viper.GetDuration("services.flights.timeout"),
+				BaseURL:          viper.GetString("services.flights.url"),
+				Timeout:          viper.GetDuration("services.flights.timeout"),
+				CitiesSyncPeriod: viper.GetDuration("services.cities.sync_period"),
 			},
 		},
 	}, nil
