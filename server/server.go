@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"on-air/config"
+	"on-air/repository"
 	"on-air/server/handlers"
 	"on-air/server/middlewares"
 	"on-air/server/services"
@@ -35,12 +36,28 @@ func SetupServer(cfg *config.Config, db *gorm.DB, redis *redis.Client, port stri
 
 	_ = customValidator.Validator.RegisterValidation("CustomTimeValidator", utils.CustomTimeValidator)
 	e.Validator = customValidator
-	auth := &handlers.Auth{
-		DB:  db,
+
+	apiMock := &services.APIMockClient{
+		Client:  &http.Client{},
+		Breaker: &breaker.Breaker{},
+		BaseURL: cfg.Services.ApiMock.BaseURL,
+		Timeout: cfg.Services.ApiMock.Timeout,
+	}
+
+	cityRepo := &repository.City{
+		APIMockClient: apiMock,
+		DB:            db,
+		SyncPeriod:    cfg.Services.ApiMock.CitiesSyncPeriod,
+	}
+
+	go cityRepo.SyncCities()
+
+	authMiddleware := &middlewares.Auth{
 		JWT: &cfg.JWT,
 	}
 
-	authMiddleware := &middlewares.Auth{
+	auth := &handlers.Auth{
+		DB:  db,
 		JWT: &cfg.JWT,
 	}
 
@@ -48,14 +65,9 @@ func SetupServer(cfg *config.Config, db *gorm.DB, redis *redis.Client, port stri
 	e.POST("/auth/register", auth.Register)
 
 	ticket := &handlers.Ticket{
-		DB:  db,
-		JWT: &cfg.JWT,
-		APIMockClient: &services.APIMockClient{
-			Client:  &http.Client{},
-			Breaker: &breaker.Breaker{},
-			BaseURL: cfg.Services.ApiMock.BaseURL,
-			Timeout: cfg.Services.ApiMock.Timeout,
-		},
+		DB:            db,
+		JWT:           &cfg.JWT,
+		APIMockClient: apiMock,
 	}
 
 	e.GET("/tickets", ticket.GetTickets, authMiddleware.AuthMiddleware)

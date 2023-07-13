@@ -49,17 +49,17 @@ func seed(configPath string, fakeFlag bool) error {
 		return err
 	}
 
+	country := models.Country{
+		Name: "Iran",
+	}
+
+	err = db.FirstOrCreate(&country, models.Country{Name: "Iran"}).Error
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+
 	if fakeFlag {
-		country := models.Country{
-			Name: "Iran",
-		}
-
-		err = db.FirstOrCreate(&country, models.Country{Name: "Iran"}).Error
-		if err != nil {
-			log.Fatal(err)
-			return err
-		}
-
 		cities := []models.City{
 			{
 				Name:      "Tehran",

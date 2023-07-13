@@ -3,10 +3,16 @@ package repository
 import (
 	"errors"
 	"log"
+	"net/http"
 	"on-air/models"
+	"on-air/server/services"
+	"reflect"
 	"testing"
+	"time"
 
+	"bou.ke/monkey"
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/eapache/go-resiliency/breaker"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -16,6 +22,7 @@ type CityTestSuite struct {
 	suite.Suite
 	sqlMock sqlmock.Sqlmock
 	dbMock  *gorm.DB
+	city    City
 }
 
 func (suite *CityTestSuite) SetupSuite() {
@@ -33,9 +40,19 @@ func (suite *CityTestSuite) SetupSuite() {
 	}
 
 	suite.sqlMock = sqlMock
+	suite.city = City{
+		APIMockClient: &services.APIMockClient{
+			Client:  &http.Client{},
+			Breaker: &breaker.Breaker{},
+			BaseURL: "http://example.com",
+			Timeout: time.Second,
+		},
+		DB:         suite.dbMock,
+		SyncPeriod: time.Duration(2 * time.Second),
+	}
 }
 
-func (suite *CityTestSuite) TestTickets_GetCityByName_Success() {
+func (suite *CityTestSuite) Test_GetCityByName_Success() {
 	require := suite.Require()
 
 	expectedCity := models.City{
@@ -49,7 +66,7 @@ func (suite *CityTestSuite) TestTickets_GetCityByName_Success() {
 			"id", "Name", "country_id",
 		}).
 		AddRow(1, "Shiraz", 1)
-	suite.sqlMock.ExpectQuery(`SELECT (.+) FROM "cities" WHERE Name = \$1 (.+)`).
+	suite.sqlMock.ExpectQuery(`SELECT (.+) FROM "cities" WHERE name = \$1 (.+)`).
 		WithArgs("Shiraz").
 		WillReturnRows(mockCity)
 
@@ -59,15 +76,43 @@ func (suite *CityTestSuite) TestTickets_GetCityByName_Success() {
 	require.Equal(expectedCity, *city)
 }
 
-func (suite *CityTestSuite) TestTickets_GetCityByName_Failure() {
+func (suite *CityTestSuite) Test_GetCityByName_Failure() {
 	require := suite.Require()
-	suite.sqlMock.ExpectQuery(`SELECT (.+) FROM "cities" WHERE Name = \$1 (.+)`).
+	suite.sqlMock.ExpectQuery(`SELECT (.+) FROM "cities" WHERE name = \$1 (.+)`).
 		WithArgs("Shiraz").
 		WillReturnError(errors.New("internal error"))
 
 	_, err := FindCityByName(suite.dbMock, "Shiraz")
 
 	require.Equal(err.Error(), "internal error")
+}
+
+func (suite *CityTestSuite) Test_SyncCities_Success() {
+	require := suite.Require()
+
+	getCitiesPatchCalledCount := 0
+	getCitiesPatch := monkey.PatchInstanceMethod(
+		reflect.TypeOf(suite.city.APIMockClient),
+		"GetCities",
+		func(_ *services.APIMockClient) ([]string, error) {
+			getCitiesPatchCalledCount++
+			return []string{"Tehran", "Tabriz", "Shiraz", "Kish", "Esfahan", "Qeshm", "Mashhad"}, nil
+		},
+	)
+	defer getCitiesPatch.Unpatch()
+
+	storeCitiesCalled := 0
+	storeCitiesPatch := monkey.PatchInstanceMethod(reflect.TypeOf(suite.city), "StoreCities",
+		func(c *City, cities []string) error {
+			storeCitiesCalled++
+			return nil
+		})
+	defer storeCitiesPatch.Unpatch()
+
+	go suite.city.SyncCities()
+	time.Sleep(5 * time.Second)
+	require.Equal(3, getCitiesPatchCalledCount)
+	require.Equal(true, storeCitiesCalled)
 }
 
 func TestCityRepository(t *testing.T) {
