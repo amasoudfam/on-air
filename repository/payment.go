@@ -133,13 +133,7 @@ func pasargadApi(ipg *config.IPG) (pasrgad *pasargad.PasargadPaymentAPI) {
 func ChangePaymentStatus(db *gorm.DB, ticketID uint, status string) error {
 	var payments []models.Payment
 
-	err := db.Model(&payments).Where("ticket_id = ?", ticketID).Find(&payments).Error
-
-	if err != nil {
-		return err
-	}
-
-	err = db.Model(&payments).Update("status", status).Error
+	err := db.Model(&payments).Where("ticket_id = ?", ticketID).Update("status", status).Error
 
 	if err != nil {
 		return err

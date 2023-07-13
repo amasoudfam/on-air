@@ -20,6 +20,7 @@ var (
 )
 
 func init() {
+	rootCmd.AddCommand(workerCmd)
 	rootCmd.PersistentFlags().StringVar(&configFlag, "config", "config.yaml", "config path")
 }
 
