@@ -3,7 +3,7 @@ info:
   title: on-air APIs
   version: 1.0.0
 servers:
-  - url: https://localhost:8080
+  - url: http://localhost:2000
     description: on-air project
 paths:
   /flights:
@@ -123,35 +123,26 @@ paths:
           description: Unauthorized
         '500':
           description: Internal server error
-  /ticket:
+  /tickets/reserve:
     post:
       summary: Create a new Ticket
       tags:
         - Tickets
-      parameters:
-        - in: query
-          name: flight_number
-          required: true
-          schema:
-            type: string
-          description: The flight_number of the ticket
-        - in: query
-          name: passengers
-          required: true
-          schema:
-            type: array
-            items:
-              type: integer
       requestBody:
         description: JSON object containing Ticket information
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ReserveResponse'
+              $ref: '#/components/schemas/ReserveRequest'
       responses:
         '201':
           description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: "string"
+                $ref: "#/components/schemas/ReserveResponse"
         '400':
           description: Bad request
         '401':
@@ -163,23 +154,21 @@ paths:
       summary: Create a new request pay
       tags:
         - Payments
-      parameters:
-        - in: query
-          name: ticket_id
-          required: true
-          schema:
-            type: integer
-          description: The ticket_id of the ticket
       requestBody:
         description: JSON object containing payment information
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PayResponse'
+              $ref: '#/components/schemas/PayRequest'
       responses:
         '201':
           description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: "string"
+                $ref: "#/components/schemas/PayResponse"
         '400':
           description: Bad request
         '401':
@@ -191,23 +180,21 @@ paths:
       summary: call back url to verify
       tags:
         - Payments
-      parameters:
-        - in: query
-          name: payment_id
-          required: true
-          schema:
-            type: integer
-          description: The payment_id of the payment
       requestBody:
         description: JSON object containing payment information
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CallBackResponse'
+              $ref: '#/components/schemas/CallBackRequest'
       responses:
         '201':
           description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: "string"
+                $ref: "#/components/schemas/CallBackResponse"
         '400':
           description: Bad request
   /tickets:
@@ -311,14 +298,32 @@ components:
         - first_name
         - last_name
         - gender
+    ReserveRequest:
+      type: "object"
+      properties:
+        flight_number:
+          type: "string"
+          example: "123131454"
+        passengers:
+          type: "array"
+          items:
+            type: integer
+      required:
+        - flight_number
     ReserveResponse:
       type: "object"
       properties:
         status:
+          type: "integer"
+          example: "ticket_id"
+    PayRequest:
+      type: "object"
+      properties:
+        ticket_id:
           type: "string"
-          example: "Reserved"
+          example: "1"
       required:
-        - status
+        - ticket_id
     PayResponse:
       type: "object"
       properties:
@@ -327,6 +332,14 @@ components:
           example: "http://example.com/token=xyz123"
       required:
         - gate_way_url
+    CallBackRequest:
+      type: "object"
+      properties:
+        payment_id:
+          type: "string"
+          example: "1"
+      required:
+        - payment_id
     CallBackResponse:
       type: "object"
       properties:

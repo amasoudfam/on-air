@@ -118,7 +118,7 @@ type ReserveRequest struct {
 }
 
 type ReserveResponse struct {
-	Status string `json:"status" binding:"required"`
+	TicketId int `json:"ticket_id" binding:"required"`
 }
 
 func (t *Ticket) Reserve(ctx echo.Context) error {
@@ -139,9 +139,6 @@ func (t *Ticket) Reserve(ctx echo.Context) error {
 	}
 
 	flight, err := repository.FindFlight(t.DB, flightInfo.Number)
-	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, err.Error())
-	}
 
 	if flight == nil {
 		flight, err = repository.AddFlight(t.DB,
@@ -182,7 +179,7 @@ func (t *Ticket) Reserve(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, ReserveResponse{
-		Status: ticket.Status,
+		TicketId: int(ticket.ID),
 	})
 }
 

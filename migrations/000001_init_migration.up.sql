@@ -36,7 +36,7 @@ CREATE TABLE flights (
   airplane varchar(50),
   airline varchar(50),
   started_at date,
-  ended_at date,
+  finished_at date,
   created_at timestamp with time zone,
   updated_at timestamp with time zone,
   deleted_at timestamp with time zone
