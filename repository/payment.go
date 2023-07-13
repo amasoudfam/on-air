@@ -50,8 +50,6 @@ func PayTicket(db *gorm.DB, ipg *config.IPG, ticketID uint) (string, error) {
 	return response, nil
 }
 
-var notFountPaymentError = errors.New("Payment not found")
-
 func VerifyPayment(db *gorm.DB, ipg *config.IPG, paymentID int, paymentDate time.Time, transactionReferenceID int) (string, error) {
 	var dbPayment models.Payment
 
@@ -74,13 +72,14 @@ func VerifyPayment(db *gorm.DB, ipg *config.IPG, paymentID int, paymentDate time
 	}
 
 	if checkResponse.IsSuccess != true && checkResponse.Amount != int64(dbPayment.Amount) {
-		RefundPayment(ipg, dbPayment)
+		RefundPayment(ipg, paymentID, paymentDate)
 		return "", errors.New("Transaction not correct!")
 	}
 
 	verifyRequest := pasargad.CreateVerifyPaymentRequest{
-		InvoiceNumber: strconv.Itoa(int(dbPayment.ID)),
-		InvoiceDate:   dbPayment.CreatedAt.Format("2006/01/02"),
+		Amount:        int64(dbPayment.Amount),
+		InvoiceNumber: strconv.Itoa(paymentID),
+		InvoiceDate:   paymentDate.Format("2006/01/02"),
 	}
 
 	verifyResponse, err := pasargadApi.VerifyPayment(verifyRequest)
@@ -93,12 +92,12 @@ func VerifyPayment(db *gorm.DB, ipg *config.IPG, paymentID int, paymentDate time
 		err = db.Save(dbPayment).Error
 
 		if err != nil {
-			RefundPayment(ipg, dbPayment)
+			RefundPayment(ipg, paymentID, paymentDate)
 			return "", err
 		}
 
 	} else {
-		RefundPayment(ipg, dbPayment)
+		RefundPayment(ipg, paymentID, paymentDate)
 	}
 
 	ChangeTicketStatus(db, dbPayment.TicketID, string(models.PaymentPaid))
@@ -106,13 +105,13 @@ func VerifyPayment(db *gorm.DB, ipg *config.IPG, paymentID int, paymentDate time
 	return dbPayment.Status, nil
 }
 
-func RefundPayment(ipg *config.IPG, dbPayment models.Payment) {
+func RefundPayment(ipg *config.IPG, paymentID int, paymentDate time.Time) {
 
 	pasargadApi := pasargadApi(ipg)
 
 	request := pasargad.CreateRefundRequest{
-		InvoiceNumber: strconv.Itoa(int(dbPayment.ID)),
-		InvoiceDate:   dbPayment.CreatedAt.Format("2006/01/02"),
+		InvoiceNumber: strconv.Itoa(paymentID),
+		InvoiceDate:   paymentDate.Format("2006/01/02"),
 	}
 
 	_, err := pasargadApi.Refund(request)
@@ -120,7 +119,6 @@ func RefundPayment(ipg *config.IPG, dbPayment models.Payment) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
 }
 
 func pasargadApi(ipg *config.IPG) (pasrgad *pasargad.PasargadPaymentAPI) {
