@@ -30,3 +30,5 @@ services:
   flights: 
     url: "http://example.com"
     timeout: "60s"
+  cities:
+    sync_period: "60m"
