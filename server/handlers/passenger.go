@@ -7,6 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/labstack/echo/v4"
+	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
@@ -30,11 +31,11 @@ func (p *Passenger) Create(ctx echo.Context) error {
 	userID, _ := ctx.Get("user_id").(int)
 	var req CreateRequest
 	if err := ctx.Bind(&req); err != nil {
-		return ctx.JSON(http.StatusBadRequest, "Failed to bind")
+		return ctx.JSON(http.StatusBadRequest, "Bind Error")
 	}
 
 	if err := ctx.Validate(&req); err != nil {
-		return ctx.JSON(http.StatusBadRequest, "Invalid json key")
+		return ctx.JSON(http.StatusBadRequest, err.Error())
 	}
 
 	if !utils.ValidateNationalCode(req.NationalCode) {
@@ -54,7 +55,8 @@ func (p *Passenger) Create(ctx echo.Context) error {
 		if pgerr, ok := err.(*pgconn.PgError); ok && pgerr.Code == "23505" {
 			return ctx.JSON(http.StatusBadRequest, "Passenger exists")
 		} else {
-			return ctx.JSON(http.StatusInternalServerError, "Internal error")
+			logrus.Error("passenger_handler: Create failed when use repository.CreatePassenger, error:", err)
+			return ctx.JSON(http.StatusInternalServerError, "Internal server error")
 		}
 	}
 
@@ -76,7 +78,8 @@ func (p *Passenger) Get(ctx echo.Context) error {
 	passengers, err := repository.GetPassengersByUserID(p.DB, userID)
 
 	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, "Internal error")
+		logrus.Error("passenger_handler: Get failed when use repository.GetPassengersByUserID, error:", err)
+		return ctx.JSON(http.StatusInternalServerError, "Internal server error")
 	}
 
 	var response []GetResponse

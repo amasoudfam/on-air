@@ -13,6 +13,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/redis/go-redis/v9"
+	"github.com/sirupsen/logrus"
 )
 
 type Flight struct {
@@ -61,7 +62,7 @@ type GetFlightsResponse struct {
 func (f *Flight) GetFlights(ctx echo.Context) error {
 	var req GetFlightsRequest
 	if err := ctx.Bind(&req); err != nil {
-		return ctx.JSON(http.StatusBadRequest, "Invalid query parameters")
+		return ctx.JSON(http.StatusBadRequest, "Bind Error")
 	}
 
 	if err := ctx.Validate(req); err != nil {
@@ -73,21 +74,25 @@ func (f *Flight) GetFlights(ctx echo.Context) error {
 	cashResult, err := f.Redis.Get(ctx.Request().Context(), redisKey).Result()
 
 	if err != nil && err != redis.Nil {
-		return ctx.JSON(http.StatusInternalServerError, err.Error())
+		logrus.Error("flight_handler: GetFlights failed when use f.Redis.Get, error:", err)
+		return ctx.JSON(http.StatusInternalServerError, "Internal server error")
 	} else if err == redis.Nil {
 		apiResult, err := f.APIMockClient.GetFlights(req.Origin, req.Destination, req.Date)
 		if err != nil {
-			return ctx.JSON(http.StatusInternalServerError, err.Error())
+			logrus.Error("flight_handler: GetFlights failed when use f.APIMockClient.GetFlights, error:", err)
+			return ctx.JSON(http.StatusInternalServerError, "Internal server error")
 		}
 
 		if len(apiResult) > 0 {
 			jsonData, err := json.Marshal(apiResult)
 			if err != nil {
-				return ctx.JSON(http.StatusInternalServerError, err.Error())
+				logrus.Error("flight_handler: GetFlights failed when use json.Marshal, error:", err)
+				return ctx.JSON(http.StatusInternalServerError, "Internal server error")
 			}
 
 			if err := f.Redis.Set(ctx.Request().Context(), redisKey, jsonData, f.Cache.TTL).Err(); err != nil {
-				return ctx.JSON(http.StatusInternalServerError, err.Error())
+				logrus.Error("flight_handler: GetFlights failed when use f.Redis.Set, error:", err)
+				return ctx.JSON(http.StatusInternalServerError, "Internal server error")
 			}
 
 			flights = apiResult
@@ -95,7 +100,8 @@ func (f *Flight) GetFlights(ctx echo.Context) error {
 
 	} else {
 		if err := json.Unmarshal([]byte(cashResult), &flights); err != nil {
-			return ctx.JSON(http.StatusInternalServerError, err.Error())
+			logrus.Error("flight_handler: GetFlights failed when use json.Unmarshal, error:", err)
+			return ctx.JSON(http.StatusInternalServerError, "Internal server error")
 		}
 	}
 
