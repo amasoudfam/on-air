@@ -6,6 +6,7 @@ import (
 	"on-air/models"
 	"on-air/repository"
 	"on-air/server/services"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
@@ -212,6 +213,10 @@ func (t *Ticket) Cancel(ctx echo.Context) error {
 	if err != nil {
 		return ctx.JSON(http.StatusNotFound, err.Error())
 	}
+
+	if time.Now().Before(ticket.Flight.StartedAt) {
+		return ctx.JSON(http.StatusBadRequest, "You can not cancel ticket after flight time")
+	}
 	err = repository.ChangeTicketStatus(t.DB, ticket.ID, string(models.TicketRefund))
 
 	if err != nil {
@@ -219,6 +224,7 @@ func (t *Ticket) Cancel(ctx echo.Context) error {
 	}
 
 	t.apiMock.Refund(ticket.Flight.Number, ticket.Count)
+	// Payment not handled :)
 
 	return ctx.NoContent(http.StatusOK)
 }
