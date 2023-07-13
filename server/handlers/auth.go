@@ -37,8 +37,6 @@ func (a *Auth) Login(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, err.Error())
 	}
 
-	// TODO repository
-	// TODO error package
 	dbUser, err := repository.GetUserByEmail(a.DB, req.Email)
 	if err != nil {
 		return ctx.JSON(http.StatusUnauthorized, "Invalid credentials")

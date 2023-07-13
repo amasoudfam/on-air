@@ -2,10 +2,12 @@ package server
 
 import (
 	"fmt"
+
+	"on-air/server/middlewares"
+
 	"net/http"
 	"on-air/config"
 	"on-air/server/handlers"
-	"on-air/server/middlewares"
 	"on-air/server/services"
 	"on-air/utils"
 
@@ -40,12 +42,12 @@ func SetupServer(cfg *config.Config, db *gorm.DB, redis *redis.Client, port stri
 		JWT: &cfg.JWT,
 	}
 
+	e.POST("/auth/login", auth.Login)
+	e.POST("/auth/register", auth.Register)
+
 	authMiddleware := &middlewares.Auth{
 		JWT: &cfg.JWT,
 	}
-
-	e.POST("/auth/login", auth.Login)
-	e.POST("/auth/register", auth.Register)
 
 	ticket := &handlers.Ticket{
 		DB:  db,
