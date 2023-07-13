@@ -66,13 +66,22 @@ func Run(worker *config.Worker, ctx context.Context, db *gorm.DB) {
 					return err
 				}
 
-				_, err = apiMock.Refund(flight.Number, ticket.Count)
+				refundResult, err := apiMock.Refund(flight.Number, ticket.Count)
 
-				//err
+				if refundResult == true {
+					err = repository.ChangeTicketStatus(tx, ticket.ID, string(models.TicketExpired))
 
-				if err != nil {
-					repository.ChangeTicketStatus(tx, ticket.ID, string(models.TicketExpired))
-					repository.ChangePaymentStatus(tx, ticket.ID, string(models.PaymentExpired))
+					if err != nil {
+						log.Fatal(err)
+					}
+
+					err = repository.ChangePaymentStatus(tx, ticket.ID, string(models.PaymentExpired))
+
+					if err != nil {
+						log.Fatal(err)
+					}
+				} else {
+					return err
 				}
 
 				return nil
