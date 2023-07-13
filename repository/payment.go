@@ -5,7 +5,7 @@ import (
 	"log"
 	"on-air/config"
 	"on-air/models"
-	"on-air/pasargad"
+	"on-air/server/services/pasargad"
 	"strconv"
 	"time"
 
