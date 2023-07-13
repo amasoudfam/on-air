@@ -3,6 +3,7 @@ package models
 import (
 	"time"
 
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
@@ -15,6 +16,7 @@ type Flight struct {
 	Airline    string `gorm:"type:varchar(50)"`
 	StartedAt  time.Time
 	FinishedAt time.Time
-	FromCity   City `gorm:"foreignKey:FromCityID"`
-	ToCity     City `gorm:"foreignKey:ToCityID"`
+	Penalties  datatypes.JSON `gorm:"column:penalties"`
+	FromCity   City           `gorm:"foreignKey:FromCityID"`
+	ToCity     City           `gorm:"foreignKey:ToCityID"`
 }

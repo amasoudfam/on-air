@@ -14,7 +14,18 @@ server:
   port: 2000
 auth:
   secret-key: mysecretkey
-  lifetime: 60 m
+  expires_in: 60 m
+gatepay:
+  merchant_code: 788
+  terminal_id: 134754358
+  redirect_url: 
+  cert_file:
+  worker:
+    enabled: true
+    interval: 
+    iteration: 3
+    concurency: 2
+    limit: 3
 services:
   flights: 
     url: "http://example.com"

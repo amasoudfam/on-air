@@ -1,7 +1,6 @@
 package middlewares
 
 import (
-	"fmt"
 	"net/http"
 	"on-air/config"
 	"on-air/repository"
@@ -33,11 +32,9 @@ func (a *Auth) AuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		}
 
 		authType := strings.ToLower(authParams[0])
-		print(authType)
 		if authType != Bearer {
 			return ctx.NoContent(http.StatusUnauthorized)
 		}
-		fmt.Println("here")
 
 		accessToken := authParams[1]
 		payload, err := repository.VerifyToken(a.JWT, accessToken)

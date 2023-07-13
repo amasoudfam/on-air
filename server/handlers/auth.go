@@ -37,8 +37,6 @@ func (a *Auth) Login(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, err.Error())
 	}
 
-	// TODO repository
-	// TODO error package
 	dbUser, err := repository.GetUserByEmail(a.DB, req.Email)
 	if err != nil {
 		return ctx.JSON(http.StatusUnauthorized, "Invalid credentials")
@@ -66,8 +64,8 @@ type RegisterRequest struct {
 }
 
 type RegisterResponse struct {
-	AccessToken string `json:"access_token"`
-	TokenType   string `json:"token_type" binding:"required"`
+	Status  bool
+	Message string
 }
 
 func (a *Auth) Register(ctx echo.Context) error {
@@ -87,5 +85,10 @@ func (a *Auth) Register(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, err.Error())
 	}
 
-	return ctx.JSON(http.StatusCreated, nil)
+	res := RegisterResponse{
+		Status:  true,
+		Message: "Registration completed successfully.",
+	}
+
+	return ctx.JSON(http.StatusCreated, res)
 }

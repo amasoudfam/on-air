@@ -36,7 +36,7 @@ func (suite *AuthTestSuite) SetupSuite() {
 	suite.sqlMock = sqlMock
 	suite.jwt = &config.JWT{
 		SecretKey: "superSafeSecretKey",
-		LifeTime:  time.Duration(60 * time.Minute),
+		ExpiresIn: 60 * time.Second,
 	}
 }
 

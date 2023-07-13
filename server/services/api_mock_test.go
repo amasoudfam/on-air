@@ -11,10 +11,13 @@ import (
 
 	"github.com/eapache/go-resiliency/breaker"
 	"github.com/jarcoal/httpmock"
+	"gorm.io/datatypes"
 
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
+
+var penalties datatypes.JSON = datatypes.JSON([]byte(`{"test":"on-air"}`))
 
 type FlightServiceTestSuite struct {
 	suite.Suite
@@ -50,6 +53,7 @@ func (suite *FlightServiceTestSuite) TestGetFlightsListFromApi_Success() {
 				EmptyCapacity: 50,
 				StartedAt:     time.Date(2023, 7, 1, 10, 0, 0, 0, time.UTC),
 				FinishedAt:    time.Date(2023, 7, 1, 12, 0, 0, 0, time.UTC),
+				Penalties:     penalties,
 			},
 		}
 		respJSON, _ := json.Marshal(flights)
@@ -71,6 +75,7 @@ func (suite *FlightServiceTestSuite) TestGetFlightsListFromApi_Success() {
 			EmptyCapacity: 50,
 			StartedAt:     time.Date(2023, 7, 1, 10, 0, 0, 0, time.UTC),
 			FinishedAt:    time.Date(2023, 7, 1, 12, 0, 0, 0, time.UTC),
+			Penalties:     penalties,
 		},
 	}
 	flights, err := suite.APIMockClient.GetFlights("origin", "destination", "date")
@@ -156,6 +161,7 @@ func (suite *FlightServiceTestSuite) TestGetFlightFromApi_Success() {
 			EmptyCapacity: 50,
 			StartedAt:     time.Date(2023, 7, 1, 10, 0, 0, 0, time.UTC),
 			FinishedAt:    time.Date(2023, 7, 1, 12, 0, 0, 0, time.UTC),
+			Penalties:     penalties,
 		}
 		respJSON, _ := json.Marshal(cities)
 		w.Header().Set("Content-Type", "application/json")
@@ -175,6 +181,7 @@ func (suite *FlightServiceTestSuite) TestGetFlightFromApi_Success() {
 		EmptyCapacity: 50,
 		StartedAt:     time.Date(2023, 7, 1, 10, 0, 0, 0, time.UTC),
 		FinishedAt:    time.Date(2023, 7, 1, 12, 0, 0, 0, time.UTC),
+		Penalties:     penalties,
 	}
 	flight, err := suite.APIMockClient.GetFlight("FL001")
 	require.NoError(suite.T(), err)
@@ -201,7 +208,7 @@ func (suite *FlightServiceTestSuite) TestGetFlightReserveFromApi_Success() {
 	defer mockServer.Close()
 	suite.APIMockClient.BaseURL = mockServer.URL
 	expectedRes := true
-	reserveRes, err := suite.APIMockClient.Reserve("FL001")
+	reserveRes, err := suite.APIMockClient.Reserve("FL001", 1)
 	require.NoError(suite.T(), err)
 	require.NotNil(suite.T(), reserveRes)
 	require.Equal(suite.T(), expectedRes, reserveRes)
@@ -226,7 +233,7 @@ func (suite *FlightServiceTestSuite) TestGetFlightRefundFromApi_Success() {
 	defer mockServer.Close()
 	suite.APIMockClient.BaseURL = mockServer.URL
 	expectedFlights := true
-	reserveRes, err := suite.APIMockClient.Refund("FL001")
+	reserveRes, err := suite.APIMockClient.Refund("FL001", 1)
 	require.NoError(suite.T(), err)
 	require.NotNil(suite.T(), reserveRes)
 	require.Equal(suite.T(), expectedFlights, reserveRes)

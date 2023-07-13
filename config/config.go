@@ -12,6 +12,8 @@ type Config struct {
 	Server   Server
 	Redis    Redis
 	JWT      JWT
+	IPG      IPG
+	Worker   Worker
 	Services Services
 }
 
@@ -36,10 +38,23 @@ type Server struct {
 
 type JWT struct {
 	SecretKey string
-	// TODO change name  expires_in
-	LifeTime time.Duration
+	ExpiresIn time.Duration
 }
 
+type IPG struct {
+	MerchantCode int
+	TerminalId   int
+	RedirectUrl  string
+	CertFile     string
+}
+
+type Worker struct {
+	Enabled     bool
+	Interval    time.Duration
+	Iteration   int
+	Concurrency int
+	Limit       int
+}
 type Service struct {
 	BaseURL string
 	Timeout time.Duration
@@ -77,7 +92,20 @@ func InitConfig(configPath string) (*Config, error) {
 		},
 		JWT: JWT{
 			SecretKey: viper.GetString("auth.secret_key"),
-			LifeTime:  viper.GetDuration("auth.lifetime"),
+			ExpiresIn: viper.GetDuration("auth.expires_in"),
+		},
+		IPG: IPG{
+			MerchantCode: viper.GetInt("gatepay.merchant_code"),
+			TerminalId:   viper.GetInt("gatepay.terminal_id"),
+			RedirectUrl:  viper.GetString("gatepay.redirect_url"),
+			CertFile:     viper.GetString("gatepay.cert_file"),
+		},
+		Worker: Worker{
+			Enabled:     viper.GetBool("worker.enabled"),
+			Interval:    viper.GetDuration("worker.interval"),
+			Iteration:   viper.GetInt("worker.iteration"),
+			Concurrency: viper.GetInt("worker.concurency"),
+			Limit:       viper.GetInt("worker.limit"),
 		},
 		Services: Services{
 			ApiMock: Service{

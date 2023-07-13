@@ -1,16 +1,16 @@
 package services
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"net/url"
-	"strings"
 	"time"
 
 	"github.com/eapache/go-resiliency/breaker"
+	"gorm.io/datatypes"
 )
 
 type APIMockClient struct {
@@ -20,17 +20,26 @@ type APIMockClient struct {
 	Timeout time.Duration
 }
 
+type Penalties struct {
+	Start   string
+	End     string
+	Percent int
+}
+
+type Penalty struct {
+}
 type FlightResponse struct {
-	Number        string    `json:"number"`
-	Airplane      string    `json:"airplane"`
-	Airline       string    `json:"airline"`
-	Price         int       `json:"price"`
-	Origin        string    `json:"origin"`
-	Destination   string    `json:"destination"`
-	Capacity      int       `json:"capacity"`
-	EmptyCapacity int       `json:"empty_capacity"`
-	StartedAt     time.Time `json:"started_at"`
-	FinishedAt    time.Time `json:"finished_at"`
+	Number        string         `json:"number"`
+	Airplane      string         `json:"airplane"`
+	Airline       string         `json:"airline"`
+	Price         int            `json:"price"`
+	Origin        string         `json:"origin"`
+	Destination   string         `json:"destination"`
+	Capacity      int            `json:"capacity"`
+	EmptyCapacity int            `json:"empty_capacity"`
+	StartedAt     time.Time      `json:"started_at"`
+	FinishedAt    time.Time      `json:"finished_at"`
+	Penalties     datatypes.JSON `json:"penalties"`
 }
 
 type City struct {
@@ -235,11 +244,25 @@ type ReserveResponse struct {
 	Message string
 }
 
-func (c *APIMockClient) Reserve(number string) (bool, error) {
+type ReserveRequestParameters struct {
+	Number string
+	Count  int
+}
+
+func (c *APIMockClient) Reserve(flightNumber string, ticketCount int) (bool, error) {
 	baseUrl := c.BaseURL + "/flights/reserve"
-	data := url.Values{}
-	data.Set("number", number)
-	req, err := http.NewRequest("POST", baseUrl, strings.NewReader(data.Encode()))
+	data := ReserveRequestParameters{
+		Number: flightNumber,
+		Count:  ticketCount,
+	}
+
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		fmt.Println("Error encoding JSON:", err)
+		return false, err
+	}
+
+	req, err := http.NewRequest("POST", baseUrl, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return false, err
 	}
@@ -289,11 +312,25 @@ type RefundResponse struct {
 	Message string
 }
 
-func (c *APIMockClient) Refund(number string) (bool, error) {
+type RefundRequestParameters struct {
+	Number string
+	Count  int
+}
+
+func (c *APIMockClient) Refund(flightNumber string, ticketCount int) (bool, error) {
 	baseUrl := c.BaseURL + "/flights/refund"
-	data := url.Values{}
-	data.Set("number", number)
-	req, err := http.NewRequest("POST", baseUrl, strings.NewReader(data.Encode()))
+	data := RefundRequestParameters{
+		Number: flightNumber,
+		Count:  ticketCount,
+	}
+
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		fmt.Println("Error encoding JSON:", err)
+		return false, err
+	}
+
+	req, err := http.NewRequest("POST", baseUrl, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return false, err
 	}

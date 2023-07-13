@@ -2,12 +2,15 @@ package handlers
 
 import (
 	"fmt"
+	"golang.org/x/crypto/bcrypt"
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"on-air/config"
 	"on-air/utils"
 	"strings"
 	"testing"
+	"time"
 
 	"bou.ke/monkey"
 	"github.com/DATA-DOG/go-sqlmock"
@@ -42,10 +45,19 @@ func (suite *AuthTestSuite) SetupSuite() {
 	}
 
 	suite.sqlMock = sqlMock
-	suite.auth = &Auth{DB: db}
+	suite.auth = &Auth{DB: db, JWT: &config.JWT{
+		SecretKey: "testSecret",
+		ExpiresIn: time.Minute * 3,
+	}}
+
 	suite.e = echo.New()
 	suite.e.Validator = &utils.CustomValidator{Validator: validator.New()}
 	suite.endpoint = "/auth"
+}
+
+func (suite *AuthTestSuite) SetupTest() {
+	suite.e.Validator = &utils.CustomValidator{Validator: validator.New()}
+	suite.e.Binder = &echo.DefaultBinder{}
 }
 
 func (suite *AuthTestSuite) CallRegisterHandler(requestBody string) (*httptest.ResponseRecorder, error) {
@@ -69,23 +81,13 @@ func (suite *AuthTestSuite) CallLoginHandler(requestBody string) (*httptest.Resp
 	return res, err
 }
 
-func (suite *AuthTestSuite) reset_Validator() {
-	suite.e.Validator = &utils.CustomValidator{Validator: validator.New()}
-}
-
-func (suite *AuthTestSuite) reset_Binder() {
-	suite.e.Binder = &echo.DefaultBinder{}
-}
-
-func (suite *AuthTestSuite) TestRegister_Register_Success() {
+func (suite *AuthTestSuite) TestAuth_Register_Success() {
 	require := suite.Require()
 	expectedStatusCode := http.StatusCreated
 
 	suite.e.Binder = &MockBinder{}
-	defer suite.reset_Binder()
 
 	suite.e.Validator = &MockValidator{}
-	defer suite.reset_Validator()
 
 	monkey.Patch(utils.HashPassword, func(_ string) (string, error) {
 		return "superHashedPasswor", nil
@@ -104,15 +106,13 @@ func (suite *AuthTestSuite) TestRegister_Register_Success() {
 	require.Equal(expectedStatusCode, res.Code)
 }
 
-func (suite *AuthTestSuite) TestRegister_Register_Failure_Invalid_Body() {
+func (suite *AuthTestSuite) TestAuth_Register_Failure_Invalid_Body() {
 	require := suite.Require()
 	expectedStatusCode := http.StatusBadRequest
 
 	suite.e.Binder = &MockBinder{}
-	defer suite.reset_Binder()
 
 	suite.e.Validator = &MockValidator{}
-	defer suite.reset_Validator()
 
 	requestBody := `{}`
 	res, err := suite.CallRegisterHandler(requestBody)
@@ -120,15 +120,13 @@ func (suite *AuthTestSuite) TestRegister_Register_Failure_Invalid_Body() {
 	require.Equal(expectedStatusCode, res.Code)
 }
 
-func (suite *AuthTestSuite) TestRegister_Register_Failure_Duplicate_User() {
+func (suite *AuthTestSuite) TestAuth_Register_Failure_Duplicate_User() {
 	require := suite.Require()
 	expectedStatusCode := http.StatusBadRequest
 
 	suite.e.Binder = &MockBinder{}
-	defer suite.reset_Binder()
 
 	suite.e.Validator = &MockValidator{}
-	defer suite.reset_Validator()
 
 	pgErr := &pgconn.PgError{
 		Message: "User exists",
@@ -147,26 +145,18 @@ func (suite *AuthTestSuite) TestRegister_Register_Failure_Duplicate_User() {
 
 }
 
-func (suite *AuthTestSuite) TestLogin_Login_Success() {
+func (suite *AuthTestSuite) TestAuth_Login_Success() {
 	require := suite.Require()
 	expectedStatusCode := http.StatusOK
 
 	suite.e.Binder = &MockBinder{}
-	defer suite.reset_Binder()
 
 	suite.e.Validator = &MockValidator{}
-	defer suite.reset_Validator()
 
-	monkey.Patch(utils.CheckPassword, func(_ string, _ string) error {
+	monkey.Patch(bcrypt.CompareHashAndPassword, func(_, _ []byte) error {
 		return nil
 	})
-	// defer monkey.Unpatch(utils.CheckPassword)
-
-	monkey.Patch(utils.HashPassword, func(password string) (string, error) {
-		return password, nil
-	})
-
-	// defer monkey.Unpatch(utils.HashPassword)
+	defer monkey.Unpatch(bcrypt.CompareHashAndPassword)
 
 	mockUser := suite.sqlMock.NewRows(
 		[]string{

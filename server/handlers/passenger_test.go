@@ -67,6 +67,11 @@ func (suite *PassengerTestSuite) SetupSuite() {
 	suite.UserID = 3
 }
 
+func (suite *PassengerTestSuite) SetupTest() {
+	suite.e.Validator = &utils.CustomValidator{Validator: validator.New()}
+	suite.e.Binder = &echo.DefaultBinder{}
+}
+
 func (suite *PassengerTestSuite) CallCreateHandler(requestBody string) (*httptest.ResponseRecorder, error) {
 	req := httptest.NewRequest(http.MethodPost, suite.endpoint, strings.NewReader(requestBody))
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
@@ -87,23 +92,13 @@ func (suite *PassengerTestSuite) CallGetHandler() (*httptest.ResponseRecorder, e
 	return res, err
 }
 
-func (suite *PassengerTestSuite) reset_Validator() {
-	suite.e.Validator = &utils.CustomValidator{Validator: validator.New()}
-}
-
-func (suite *PassengerTestSuite) reset_Binder() {
-	suite.e.Binder = &echo.DefaultBinder{}
-}
-
 func (suite *PassengerTestSuite) TestCreatePassenger_CreatePassenger_Success() {
 	require := suite.Require()
 	expectedStatusCode := http.StatusCreated
 
 	suite.e.Binder = &MockBinder{}
-	defer suite.reset_Binder()
 
 	suite.e.Validator = &MockValidator{}
-	defer suite.reset_Validator()
 
 	monkey.Patch(utils.ValidateNationalCode, func(_ string) bool {
 		return true
@@ -131,10 +126,8 @@ func (suite *PassengerTestSuite) TestCreatePassenger_CreatePassenger_Failure() {
 	expectedBody := "\"Internal error\"\n"
 
 	suite.e.Binder = &MockBinder{}
-	defer suite.reset_Binder()
 
 	suite.e.Validator = &MockValidator{}
-	defer suite.reset_Validator()
 
 	monkey.Patch(utils.ValidateNationalCode, func(_ string) bool {
 		return true
@@ -164,10 +157,8 @@ func (suite *PassengerTestSuite) TestCreatePassenger_CreatePassenger_Duplicate_F
 	expectedBody := "\"Passenger exists\"\n"
 
 	suite.e.Binder = &MockBinder{}
-	defer suite.reset_Binder()
 
 	suite.e.Validator = &MockValidator{}
-	defer suite.reset_Validator()
 
 	monkey.Patch(utils.ValidateNationalCode, func(_ string) bool {
 		return true
@@ -230,8 +221,6 @@ func (suite *PassengerTestSuite) TestCreatePassenger_InvalidKey_Failure() {
 	expectedBody := "\"Invalid json key\"\n"
 
 	suite.e.Binder = &MockBinder{}
-	defer suite.reset_Binder()
-
 	requestBody := `{"national_code": "1000011111", "firstname": "name", "last_name": "lname", "gender": "f"}`
 
 	res, err := suite.CallCreateHandler(requestBody)
@@ -247,10 +236,8 @@ func (suite *PassengerTestSuite) TestCreatePassenger_ValidateNationalCode_Failur
 	expectedErr := "\"Invalid national code\"\n"
 
 	suite.e.Binder = &MockBinder{}
-	defer suite.reset_Binder()
 
 	suite.e.Validator = &MockValidator{}
-	defer suite.reset_Validator()
 
 	requestBody := `{"national_code": "1234567890", "firstname": "fname", "last_name": 8, "gender": "f"}`
 

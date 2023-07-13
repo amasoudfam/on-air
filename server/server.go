@@ -49,13 +49,30 @@ func SetupServer(cfg *config.Config, db *gorm.DB, redis *redis.Client, port stri
 		JWT: &cfg.JWT,
 	}
 
-	passenger := &handlers.Passenger{
-		DB: db,
+	ticket := &handlers.Ticket{
+		DB:  db,
+		JWT: &cfg.JWT,
+		APIMockClient: &services.APIMockClient{
+			Client:  &http.Client{},
+			Breaker: &breaker.Breaker{},
+			BaseURL: cfg.Services.ApiMock.BaseURL,
+			Timeout: cfg.Services.ApiMock.Timeout,
+		},
 	}
 
-	e.POST("/passenger", passenger.Create, authMiddleware.AuthMiddleware)
-	e.GET("/passenger", passenger.Get, authMiddleware.AuthMiddleware)
-	Flight := &handlers.Flight{
+	e.GET("/tickets", ticket.GetTickets, authMiddleware.AuthMiddleware)
+	e.POST("/tickets/reserve", ticket.Reserve, authMiddleware.AuthMiddleware)
+	e.GET("/tickets/pdf", ticket.GetPDF, authMiddleware.AuthMiddleware)
+
+	payment := &handlers.Payment{
+		DB:  db,
+		IPG: &cfg.IPG,
+	}
+
+	e.POST("/payments/pay", payment.Pay, authMiddleware.AuthMiddleware)
+	e.POST("/payments/callBack", payment.CallBack, authMiddleware.AuthMiddleware)
+
+	flight := &handlers.Flight{
 		Redis: redis,
 		APIMockClient: &services.APIMockClient{
 			Client:  &http.Client{},
@@ -66,7 +83,14 @@ func SetupServer(cfg *config.Config, db *gorm.DB, redis *redis.Client, port stri
 		Cache: &cfg.Redis,
 	}
 
-	e.GET("/flights", Flight.List)
+	e.GET("/flights", flight.GetFlights)
+
+	passenger := &handlers.Passenger{
+		DB: db,
+	}
+
+	e.GET("/passengers", passenger.Get, authMiddleware.AuthMiddleware)
+	e.POST("/passengers", passenger.Create, authMiddleware.AuthMiddleware)
 
 	return e.Start(fmt.Sprintf(":%s", port))
 }
