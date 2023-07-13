@@ -5,9 +5,9 @@ import (
 	"log"
 	"on-air/config"
 	"on-air/models"
+	"on-air/server/services/pasargad"
 	"strconv"
-
-	pasargad "github.com/pepco-api/golang-rest-sdk"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -38,7 +38,7 @@ func PayTicket(db *gorm.DB, ipg *config.IPG, ticketID uint) (string, error) {
 	request := pasargad.CreatePaymentRequest{
 		Amount:        int64(payment.Amount),
 		InvoiceNumber: strconv.Itoa(int(payment.ID)),
-		InvoiceDate:   payment.CreatedAt.String(),
+		InvoiceDate:   payment.CreatedAt.Format("2006/01/02"),
 	}
 
 	response, err := pasargadApi.Redirect(request)
@@ -50,12 +50,10 @@ func PayTicket(db *gorm.DB, ipg *config.IPG, ticketID uint) (string, error) {
 	return response, nil
 }
 
-var notFountPaymentError = errors.New("Payment not found")
-
-func VerifyPayment(db *gorm.DB, ipg *config.IPG, paymentID uint) (string, error) {
+func VerifyPayment(db *gorm.DB, ipg *config.IPG, paymentID int, paymentDate time.Time, transactionReferenceID int) (string, error) {
 	var dbPayment models.Payment
 
-	err := db.First(&dbPayment, "ID = ?", paymentID).Error
+	err := db.First(&dbPayment, "ID = ?", uint(paymentID)).Error
 	if err != nil {
 		return "", err
 	}
@@ -63,8 +61,9 @@ func VerifyPayment(db *gorm.DB, ipg *config.IPG, paymentID uint) (string, error)
 	pasargadApi := pasargadApi(ipg)
 
 	checkRequest := pasargad.CreateCheckTransactionRequest{
-		InvoiceNumber: strconv.Itoa(int(dbPayment.ID)),
-		InvoiceDate:   dbPayment.CreatedAt.String(),
+		InvoiceNumber:          strconv.Itoa(paymentID),
+		InvoiceDate:            paymentDate.Format("2006/01/02"),
+		TransactionReferenceID: strconv.Itoa(transactionReferenceID),
 	}
 
 	checkResponse, err := pasargadApi.CheckTransaction(checkRequest)
@@ -73,13 +72,14 @@ func VerifyPayment(db *gorm.DB, ipg *config.IPG, paymentID uint) (string, error)
 	}
 
 	if checkResponse.IsSuccess != true && checkResponse.Amount != int64(dbPayment.Amount) {
-		RefundPayment(ipg, dbPayment)
+		RefundPayment(ipg, paymentID, paymentDate)
 		return "", errors.New("Transaction not correct!")
 	}
 
 	verifyRequest := pasargad.CreateVerifyPaymentRequest{
-		InvoiceNumber: strconv.Itoa(int(dbPayment.ID)),
-		InvoiceDate:   dbPayment.CreatedAt.String(),
+		Amount:        int64(dbPayment.Amount),
+		InvoiceNumber: strconv.Itoa(paymentID),
+		InvoiceDate:   paymentDate.Format("2006/01/02"),
 	}
 
 	verifyResponse, err := pasargadApi.VerifyPayment(verifyRequest)
@@ -92,12 +92,12 @@ func VerifyPayment(db *gorm.DB, ipg *config.IPG, paymentID uint) (string, error)
 		err = db.Save(dbPayment).Error
 
 		if err != nil {
-			RefundPayment(ipg, dbPayment)
+			RefundPayment(ipg, paymentID, paymentDate)
 			return "", err
 		}
 
 	} else {
-		RefundPayment(ipg, dbPayment)
+		RefundPayment(ipg, paymentID, paymentDate)
 	}
 
 	ChangeTicketStatus(db, dbPayment.TicketID, string(models.PaymentPaid))
@@ -105,13 +105,13 @@ func VerifyPayment(db *gorm.DB, ipg *config.IPG, paymentID uint) (string, error)
 	return dbPayment.Status, nil
 }
 
-func RefundPayment(ipg *config.IPG, dbPayment models.Payment) {
+func RefundPayment(ipg *config.IPG, paymentID int, paymentDate time.Time) {
 
 	pasargadApi := pasargadApi(ipg)
 
 	request := pasargad.CreateRefundRequest{
-		InvoiceNumber: strconv.Itoa(int(dbPayment.ID)),
-		InvoiceDate:   dbPayment.CreatedAt.String(),
+		InvoiceNumber: strconv.Itoa(paymentID),
+		InvoiceDate:   paymentDate.Format("2006/01/02"),
 	}
 
 	_, err := pasargadApi.Refund(request)
@@ -119,7 +119,6 @@ func RefundPayment(ipg *config.IPG, dbPayment models.Payment) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
 }
 
 func pasargadApi(ipg *config.IPG) (pasrgad *pasargad.PasargadPaymentAPI) {
@@ -134,13 +133,7 @@ func pasargadApi(ipg *config.IPG) (pasrgad *pasargad.PasargadPaymentAPI) {
 func ChangePaymentStatus(db *gorm.DB, ticketID uint, status string) error {
 	var payments []models.Payment
 
-	err := db.Model(&payments).Where("ticket_id = ?", ticketID).Error
-
-	if err != nil {
-		return err
-	}
-
-	err = db.Model(&payments).Update("status", status).Error
+	err := db.Model(&payments).Where("ticket_id = ?", ticketID).Update("status", status).Error
 
 	if err != nil {
 		return err

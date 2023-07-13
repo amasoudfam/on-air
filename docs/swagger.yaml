@@ -178,15 +178,27 @@ paths:
   /payment/callBack: 
     post:
       summary: call back url to verify
+      parameters:
+      - in: query
+        name: iN
+        required: true
+        schema:
+          type: integer
+          description: The id of the payment
+      - in: query
+        name: iD
+        required: true
+        schema:
+          type: string
+          description: The date of the payment
+      - in: query
+        name: tref
+        required: true
+        schema:
+           type: string
+           description: The Transaction Reference ID
       tags:
         - Payments
-      requestBody:
-        description: JSON object containing payment information
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CallBackRequest'
       responses:
         '201':
           description: Successful operation

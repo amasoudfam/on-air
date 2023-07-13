@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"on-air/config"
 	"on-air/databases"
 	"on-air/models"
@@ -13,6 +14,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/eapache/go-resiliency/breaker"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
@@ -43,7 +45,7 @@ func SetupWorker(configPath string) {
 		return
 	}
 
-	go Run(&cfg.Worker, context.Background(), db)
+	go Run(cfg, context.Background(), db)
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGTERM)
@@ -51,9 +53,15 @@ func SetupWorker(configPath string) {
 	log.Infof("Worker: os signal recieved: %s", s)
 }
 
-func Run(worker *config.Worker, ctx context.Context, db *gorm.DB) {
-	var apiMock *services.APIMockClient
-	ticker := time.NewTicker(worker.Interval)
+func Run(cfg *config.Config, ctx context.Context, db *gorm.DB) {
+	var apiMock = &services.APIMockClient{
+		Client:  &http.Client{},
+		Breaker: &breaker.Breaker{},
+		BaseURL: cfg.Services.ApiMock.BaseURL,
+		Timeout: cfg.Services.ApiMock.Timeout,
+	}
+
+	ticker := time.NewTicker(cfg.Worker.Interval)
 	counter := 0
 	for {
 		var tickets, _ = repository.GetExpiredTickets(db)
@@ -90,9 +98,9 @@ func Run(worker *config.Worker, ctx context.Context, db *gorm.DB) {
 			log.Fatal(err)
 		}
 
-		if worker.Iteration > 0 {
+		if cfg.Worker.Iteration > 0 {
 			counter++
-			if counter >= worker.Iteration {
+			if counter >= cfg.Worker.Iteration {
 				break
 			}
 		}

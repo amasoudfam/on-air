@@ -18,11 +18,11 @@ auth:
 gatepay:
   merchant_code: 788
   terminal_id: 134754358
-  redirect_url: 
-  cert_file:
+  redirect_url: "http://example.com/payment/callBack"
+  cert_file: "server/services/pasargad/certFile.xml"
   worker:
     enabled: true
-    interval: 
+    interval: 10000000
     iteration: 3
     concurency: 2
     limit: 3
