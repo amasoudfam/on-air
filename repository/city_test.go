@@ -22,7 +22,7 @@ type CityTestSuite struct {
 	suite.Suite
 	sqlMock sqlmock.Sqlmock
 	dbMock  *gorm.DB
-	city    City
+	city    *City
 }
 
 func (suite *CityTestSuite) SetupSuite() {
@@ -40,7 +40,7 @@ func (suite *CityTestSuite) SetupSuite() {
 	}
 
 	suite.sqlMock = sqlMock
-	suite.city = City{
+	suite.city = &City{
 		APIMockClient: &services.APIMockClient{
 			Client:  &http.Client{},
 			Breaker: &breaker.Breaker{},
@@ -101,9 +101,8 @@ func (suite *CityTestSuite) Test_SyncCities_Success() {
 	)
 	defer getCitiesPatch.Unpatch()
 
-	var c City
 	storeCitiesCalled := false
-	storeCitiesPatch := monkey.PatchInstanceMethod(reflect.TypeOf(&c), "StoreCities",
+	storeCitiesPatch := monkey.PatchInstanceMethod(reflect.TypeOf(suite.city), "StoreCities",
 		func(c *City, cities []string) error {
 			storeCitiesCalled = true
 			return nil
