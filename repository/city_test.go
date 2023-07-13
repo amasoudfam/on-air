@@ -101,10 +101,11 @@ func (suite *CityTestSuite) Test_SyncCities_Success() {
 	)
 	defer getCitiesPatch.Unpatch()
 
-	storeCitiesCalled := 0
-	storeCitiesPatch := monkey.PatchInstanceMethod(reflect.TypeOf(suite.city), "StoreCities",
+	var c City
+	storeCitiesCalled := false
+	storeCitiesPatch := monkey.PatchInstanceMethod(reflect.TypeOf(&c), "StoreCities",
 		func(c *City, cities []string) error {
-			storeCitiesCalled++
+			storeCitiesCalled = true
 			return nil
 		})
 	defer storeCitiesPatch.Unpatch()
