@@ -10,6 +10,7 @@ import (
 	"strconv"
 
 	"github.com/labstack/echo/v4"
+	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
@@ -68,7 +69,8 @@ func (t *Ticket) GetTickets(ctx echo.Context) error {
 
 	tickets, err := repository.GetUserTickets(t.DB, uint(userID))
 	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, err.Error())
+		logrus.Error("ticket_handler: GetTickets failed when use repository.GetUserTickets, error:", err)
+		return ctx.JSON(http.StatusInternalServerError, "Internal server error")
 	}
 
 	var ticketResponses []TicketResponse
@@ -125,7 +127,7 @@ func (t *Ticket) Reserve(ctx echo.Context) error {
 	userId, _ := ctx.Get("user_id").(int)
 	var req ReserveRequest
 	if err := ctx.Bind(&req); err != nil {
-		return ctx.JSON(http.StatusBadRequest, "")
+		return ctx.JSON(http.StatusBadRequest, "Bind Error")
 	}
 
 	if err := ctx.Validate(&req); err != nil {
@@ -133,12 +135,16 @@ func (t *Ticket) Reserve(ctx echo.Context) error {
 	}
 
 	flightInfo, err := t.APIMockClient.GetFlight(req.FlightNumber)
-
 	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, "Internal server")
+		logrus.Error("ticket_handler: Reserve failed when use t.APIMockClient.GetFlight, error:", err)
+		return ctx.JSON(http.StatusInternalServerError, "Internal server error")
 	}
 
 	flight, err := repository.FindFlight(t.DB, flightInfo.Number)
+	if err != nil {
+		logrus.Error("ticket_handler: Reserve failed when use repository.FindFlight, error:", err)
+		return ctx.JSON(http.StatusInternalServerError, "Internal server error")
+	}
 
 	if flight == nil {
 		flight, err = repository.AddFlight(t.DB,
@@ -154,12 +160,14 @@ func (t *Ticket) Reserve(ctx echo.Context) error {
 	}
 
 	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, "Internal server Error")
+		logrus.Error("ticket_handler: Reserve failed when use repository.AddFlight, error:", err)
+		return ctx.JSON(http.StatusInternalServerError, "Internal server error")
 	}
 
 	flightReserve, err := t.APIMockClient.Reserve(req.FlightNumber, len(req.PassengerIDs))
 	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, "Internal server Error")
+		logrus.Error("ticket_handler: Reserve failed when use t.APIMockClient.Reserve, error:", err)
+		return ctx.JSON(http.StatusInternalServerError, "Internal server error")
 	}
 
 	if !flightReserve {
@@ -175,7 +183,8 @@ func (t *Ticket) Reserve(ctx echo.Context) error {
 	)
 	if err != nil {
 		t.APIMockClient.Refund(req.FlightNumber, len(req.PassengerIDs))
-		return ctx.JSON(http.StatusInternalServerError, "Internal server Error")
+		logrus.Error("ticket_handler: Reserve failed when use repository.ReserveTicket, error:", err)
+		return ctx.JSON(http.StatusInternalServerError, "Internal server error")
 	}
 
 	return ctx.JSON(http.StatusOK, ReserveResponse{
@@ -207,12 +216,14 @@ func (t *Ticket) GetPDF(ctx echo.Context) error {
 
 	ticket, err := repository.GetTicket(t.DB, userID, ticketID)
 	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, "Internal error")
+		logrus.Error("ticket_handler: GetPDF failed when use repository.GetTicket, error:", err)
+		return ctx.JSON(http.StatusInternalServerError, "Internal server error")
 	}
 
 	result, err := utils.GeneratePDF(ticket)
 	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, "Internal error")
+		logrus.Error("ticket_handler: GetPDF failed when use utils.GeneratePDF, error:", err)
+		return ctx.JSON(http.StatusInternalServerError, "Internal server error")
 	}
 
 	ctx.Response().Header().Set("Content-Type", "application/pdf")

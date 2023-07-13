@@ -49,7 +49,7 @@ func (suite *CityTestSuite) TestTickets_GetCityByName_Success() {
 			"id", "Name", "country_id",
 		}).
 		AddRow(1, "Shiraz", 1)
-	suite.sqlMock.ExpectQuery(`SELECT (.+) FROM "cities" WHERE Name = \$1 (.+)`).
+	suite.sqlMock.ExpectQuery(`SELECT (.+) FROM "cities" WHERE name = \$1 (.+)`).
 		WithArgs("Shiraz").
 		WillReturnRows(mockCity)
 
@@ -61,13 +61,13 @@ func (suite *CityTestSuite) TestTickets_GetCityByName_Success() {
 
 func (suite *CityTestSuite) TestTickets_GetCityByName_Failure() {
 	require := suite.Require()
-	suite.sqlMock.ExpectQuery(`SELECT (.+) FROM "cities" WHERE Name = \$1 (.+)`).
+	suite.sqlMock.ExpectQuery(`SELECT (.+) FROM "cities" WHERE name = \$1 (.+)`).
 		WithArgs("Shiraz").
-		WillReturnError(errors.New("internal error"))
+		WillReturnError(errors.New("Internal server error"))
 
 	_, err := FindCityByName(suite.dbMock, "Shiraz")
 
-	require.Equal(err.Error(), "internal error")
+	require.Equal(err.Error(), "Internal server error")
 }
 
 func TestCityRepository(t *testing.T) {

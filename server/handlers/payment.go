@@ -6,6 +6,7 @@ import (
 	"on-air/repository"
 
 	"github.com/labstack/echo/v4"
+	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
@@ -25,7 +26,7 @@ type PayResponse struct {
 func (t *Payment) Pay(ctx echo.Context) error {
 	var req PayRequest
 	if err := ctx.Bind(&req); err != nil {
-		return ctx.JSON(http.StatusBadRequest, "")
+		return ctx.JSON(http.StatusBadRequest, "Bind Error")
 	}
 
 	if err := ctx.Validate(&req); err != nil {
@@ -33,8 +34,8 @@ func (t *Payment) Pay(ctx echo.Context) error {
 	}
 
 	address, err := repository.PayTicket(t.DB, t.IPG, req.TicketID)
-
 	if err != nil {
+		logrus.Error("payment_handler: Pay failed when use repository.PayTicket, error:", err)
 		return ctx.JSON(http.StatusInternalServerError, "Internal server error")
 	}
 
@@ -54,7 +55,7 @@ type CallBackResponse struct {
 func (t *Payment) CallBack(ctx echo.Context) error {
 	var req CallBackRequest
 	if err := ctx.Bind(&req); err != nil {
-		return ctx.JSON(http.StatusBadRequest, "")
+		return ctx.JSON(http.StatusBadRequest, "Bind Error")
 	}
 
 	if err := ctx.Validate(&req); err != nil {
@@ -62,8 +63,8 @@ func (t *Payment) CallBack(ctx echo.Context) error {
 	}
 
 	status, err := repository.VerifyPayment(t.DB, t.IPG, req.PaymentID)
-
 	if err != nil {
+		logrus.Error("payment_handler: CallBack failed when use repository.VerifyPayment, error:", err)
 		return ctx.JSON(http.StatusInternalServerError, "Internal server error")
 	}
 

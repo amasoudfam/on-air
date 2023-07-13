@@ -300,10 +300,10 @@ func (suite *GetTicketPDFTestSuite) TestGetList_Failure_InvalidTicketID() {
 func (suite *GetTicketPDFTestSuite) TestGetList_Failure_InternalError() {
 	require := suite.Require()
 	expectedStatusCode := http.StatusInternalServerError
-	expectedBody := "\"Internal error\"\n"
+	expectedBody := "\"Internal server error\"\n"
 
 	patch := monkey.Patch(repository.GetTicket, func(db *gorm.DB, userID int, ticketID int) (models.Ticket, error) {
-		return models.Ticket{}, errors.New("Internal error")
+		return models.Ticket{}, errors.New("Internal server error")
 	})
 	defer patch.Unpatch()
 
@@ -317,7 +317,7 @@ func (suite *GetTicketPDFTestSuite) TestGetList_Failure_InternalError() {
 func (suite *GetTicketPDFTestSuite) TestGetList_Failure_GenerateOutput() {
 	require := suite.Require()
 	expectedStatusCode := http.StatusInternalServerError
-	expectedBody := "\"Internal error\"\n"
+	expectedBody := "\"Internal server error\"\n"
 
 	patch1 := monkey.Patch(repository.GetTicket, func(db *gorm.DB, userID int, ticketID int) (models.Ticket, error) {
 		return models.Ticket{}, nil
@@ -325,7 +325,7 @@ func (suite *GetTicketPDFTestSuite) TestGetList_Failure_GenerateOutput() {
 	defer patch1.Unpatch()
 
 	patch2 := monkey.Patch(utils.GeneratePDF, func(ticket models.Ticket) ([]byte, error) {
-		return nil, errors.New("Internal error")
+		return nil, errors.New("Internal server error")
 	})
 	defer patch2.Unpatch()
 
