@@ -62,7 +62,7 @@ func (suite *GetTicketTestSuite) SetupSuite() {
 		DB: db,
 		JWT: &config.JWT{
 			SecretKey: "testSecret",
-			LifeTime:  time.Minute * 3,
+			ExpiresIn: time.Minute * 3,
 		},
 	}
 	suite.e = echo.New()
@@ -208,14 +208,14 @@ func (suite *GetTicketPDFTestSuite) SetupSuite() {
 	suite.UserID = 3
 }
 
-func (suite *GetTicketPDFTestSuite) CallGetHandler(ticket_id int) (*httptest.ResponseRecorder, error) {
+func (suite *GetTicketPDFTestSuite) CallGetHandler(ticketId int) (*httptest.ResponseRecorder, error) {
 	req := httptest.NewRequest(http.MethodGet, suite.endpoint, nil)
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	res := httptest.NewRecorder()
 	c := suite.e.NewContext(req, res)
 	c.Set("id", strconv.Itoa(suite.UserID))
-	if ticket_id > 0 {
-		c.QueryParams().Add("ticket_id", strconv.Itoa(ticket_id))
+	if ticketId > 0 {
+		c.QueryParams().Add("ticket_id", strconv.Itoa(ticketId))
 	}
 	err := suite.ticket.GetPDF(c)
 	return res, err

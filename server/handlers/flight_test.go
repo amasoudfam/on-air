@@ -23,7 +23,7 @@ import (
 	"gorm.io/datatypes"
 )
 
-var penalties datatypes.JSON = datatypes.JSON([]byte(`{"test":"on-air"}`))
+var penalties = datatypes.JSON(`{"test":"on-air"}`)
 
 type FlightHandlerTestSuite struct {
 	suite.Suite

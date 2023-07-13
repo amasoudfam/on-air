@@ -31,7 +31,7 @@ func (payload *payload) Valid() error {
 }
 
 func CreateToken(cfg *config.JWT, userID int) (string, error) {
-	payload := newPayload(userID, time.Duration(cfg.LifeTime))
+	payload := newPayload(userID, cfg.ExpiresIn)
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, payload)
 	return token.SignedString([]byte(cfg.SecretKey))

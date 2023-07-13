@@ -14,7 +14,7 @@ server:
   port: 2000
 auth:
   secret-key: mysecretkey
-  lifetime: 60 m
+  expires_in: 60 m
 gatepay:
   merchant_code: 788
   terminal_id: 134754358

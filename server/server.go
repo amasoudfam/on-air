@@ -2,11 +2,13 @@ package server
 
 import (
 	"fmt"
+
+	"on-air/server/middlewares"
+
 	"net/http"
 	"on-air/config"
 	"on-air/repository"
 	"on-air/server/handlers"
-	"on-air/server/middlewares"
 	"on-air/server/services"
 	"on-air/utils"
 
