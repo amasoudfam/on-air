@@ -7,6 +7,7 @@ import (
 	"on-air/models"
 	"on-air/pasargad"
 	"strconv"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -37,7 +38,7 @@ func PayTicket(db *gorm.DB, ipg *config.IPG, ticketID uint) (string, error) {
 	request := pasargad.CreatePaymentRequest{
 		Amount:        int64(payment.Amount),
 		InvoiceNumber: strconv.Itoa(int(payment.ID)),
-		InvoiceDate:   payment.CreatedAt.String(),
+		InvoiceDate:   payment.CreatedAt.Format("2006/01/02"),
 	}
 
 	response, err := pasargadApi.Redirect(request)
@@ -51,10 +52,10 @@ func PayTicket(db *gorm.DB, ipg *config.IPG, ticketID uint) (string, error) {
 
 var notFountPaymentError = errors.New("Payment not found")
 
-func VerifyPayment(db *gorm.DB, ipg *config.IPG, paymentID uint) (string, error) {
+func VerifyPayment(db *gorm.DB, ipg *config.IPG, paymentID int, paymentDate time.Time, transactionReferenceID int) (string, error) {
 	var dbPayment models.Payment
 
-	err := db.First(&dbPayment, "ID = ?", paymentID).Error
+	err := db.First(&dbPayment, "ID = ?", uint(paymentID)).Error
 	if err != nil {
 		return "", err
 	}
@@ -62,8 +63,9 @@ func VerifyPayment(db *gorm.DB, ipg *config.IPG, paymentID uint) (string, error)
 	pasargadApi := pasargadApi(ipg)
 
 	checkRequest := pasargad.CreateCheckTransactionRequest{
-		InvoiceNumber: strconv.Itoa(int(dbPayment.ID)),
-		InvoiceDate:   dbPayment.CreatedAt.String(),
+		InvoiceNumber:          strconv.Itoa(paymentID),
+		InvoiceDate:            paymentDate.Format("2006/01/02"),
+		TransactionReferenceID: strconv.Itoa(transactionReferenceID),
 	}
 
 	checkResponse, err := pasargadApi.CheckTransaction(checkRequest)
@@ -78,7 +80,7 @@ func VerifyPayment(db *gorm.DB, ipg *config.IPG, paymentID uint) (string, error)
 
 	verifyRequest := pasargad.CreateVerifyPaymentRequest{
 		InvoiceNumber: strconv.Itoa(int(dbPayment.ID)),
-		InvoiceDate:   dbPayment.CreatedAt.String(),
+		InvoiceDate:   dbPayment.CreatedAt.Format("2006/01/02"),
 	}
 
 	verifyResponse, err := pasargadApi.VerifyPayment(verifyRequest)
@@ -110,7 +112,7 @@ func RefundPayment(ipg *config.IPG, dbPayment models.Payment) {
 
 	request := pasargad.CreateRefundRequest{
 		InvoiceNumber: strconv.Itoa(int(dbPayment.ID)),
-		InvoiceDate:   dbPayment.CreatedAt.String(),
+		InvoiceDate:   dbPayment.CreatedAt.Format("2006/01/02"),
 	}
 
 	_, err := pasargadApi.Refund(request)
