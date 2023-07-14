@@ -238,7 +238,7 @@ func (suite *IntegrationTestSuite) TestLogin_Failure() {
 	require.Equal(expectedStatusCode, res.Code)
 }
 
-type Message struct {
+type UserToken struct {
 	Access_token string
 	Token_type   string
 }
@@ -272,18 +272,70 @@ func (suite *IntegrationTestSuite) TestPassenger_Success() {
 	res = httptest.NewRecorder()
 	suite.e.ServeHTTP(res, createReq)
 	body, _ := io.ReadAll(res.Body)
-	var v Message
-	json.Unmarshal(body, &v)
+	var token UserToken
+	json.Unmarshal(body, &token)
 
 	passengerPayload, err := json.Marshal(newPassenger)
 	require.NoError(err)
 
 	createReq = httptest.NewRequest(http.MethodPost, "/passengers", bytes.NewReader(passengerPayload))
 	createReq.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	createReq.Header.Set("Authorization", fmt.Sprintf("%s %s", v.Token_type, v.Access_token))
+	createReq.Header.Set("Authorization", fmt.Sprintf("%s %s", token.Token_type, token.Access_token))
 	res = httptest.NewRecorder()
 	suite.e.ServeHTTP(res, createReq)
 
+	require.Equal(expectedStatusCode, res.Code)
+}
+
+func (suite *IntegrationTestSuite) TestPassenger_Failure() {
+	require := suite.Require()
+	expectedStatusCode := http.StatusBadRequest
+	expectedBody := "\"Passenger exists\"\n"
+
+	newUser := handlers.RegisterRequest{
+		Email:    "ehsan.fayez@gmail.com",
+		Password: "12345",
+	}
+
+	newPassenger := handlers.CreateRequest{
+		NationalCode: "1111111111",
+		FirstName:    "Masoud",
+		LastName:     "Aghdasifam",
+		Gender:       "Male",
+	}
+
+	userPayload, err := json.Marshal(newUser)
+	require.NoError(err)
+
+	createReq := httptest.NewRequest(http.MethodPost, "/auth/register", bytes.NewReader(userPayload))
+	createReq.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	res := httptest.NewRecorder()
+	suite.e.ServeHTTP(res, createReq)
+
+	createReq = httptest.NewRequest(http.MethodPost, "/auth/login", bytes.NewReader(userPayload))
+	createReq.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	res = httptest.NewRecorder()
+	suite.e.ServeHTTP(res, createReq)
+	body, _ := io.ReadAll(res.Body)
+	var token UserToken
+	json.Unmarshal(body, &token)
+
+	passengerPayload, err := json.Marshal(newPassenger)
+	require.NoError(err)
+
+	createReq = httptest.NewRequest(http.MethodPost, "/passengers", bytes.NewReader(passengerPayload))
+	createReq.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	createReq.Header.Set("Authorization", fmt.Sprintf("%s %s", token.Token_type, token.Access_token))
+	res = httptest.NewRecorder()
+	suite.e.ServeHTTP(res, createReq)
+
+	createReq = httptest.NewRequest(http.MethodPost, "/passengers", bytes.NewReader(passengerPayload))
+	createReq.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	createReq.Header.Set("Authorization", fmt.Sprintf("%s %s", token.Token_type, token.Access_token))
+	res = httptest.NewRecorder()
+	suite.e.ServeHTTP(res, createReq)
+	body, _ = io.ReadAll(res.Body)
+	require.Equal(expectedBody, string(body))
 	require.Equal(expectedStatusCode, res.Code)
 }
 
