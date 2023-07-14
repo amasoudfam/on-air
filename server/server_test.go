@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"bytes"
@@ -97,10 +97,12 @@ func (suite *IntegrationTestSuite) initDB() {
 		suite.db_cfg.Port,
 		suite.db_cfg.DB,
 	)
+
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		panic("failed to connect database")
 	}
+
 	db.AutoMigrate(&models.User{})
 	db.AutoMigrate(&models.Country{})
 	db.AutoMigrate(&models.City{})
@@ -118,6 +120,7 @@ func (suite *IntegrationTestSuite) dropDB() {
 		suite.db_cfg.Password,
 		suite.db_cfg.Port,
 	)
+
 	conn, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		panic("failed to connect database")
@@ -134,7 +137,6 @@ func (suite *IntegrationTestSuite) dropDB() {
 	if result.Error != nil {
 		panic(result.Error)
 	}
-
 }
 
 func (suite *IntegrationTestSuite) TestRegister_Success() {
