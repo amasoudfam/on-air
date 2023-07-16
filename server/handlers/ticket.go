@@ -208,7 +208,7 @@ func getPassengers(passengers []models.Passenger) []PassengerResponse {
 }
 
 func (t *Ticket) GetPDF(ctx echo.Context) error {
-	userID, _ := strconv.Atoi(ctx.Get("id").(string))
+	userID, _ := ctx.Get("user_id").(int)
 	ticketID, err := strconv.Atoi(ctx.QueryParam("ticket_id"))
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, "Invalid ticket_id")
