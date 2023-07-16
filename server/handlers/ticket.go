@@ -141,7 +141,7 @@ func (t *Ticket) Reserve(ctx echo.Context) error {
 	}
 
 	flight, err := repository.FindFlight(t.DB, flightInfo.Number)
-	if err != nil {
+	if err != nil && err.Error() != "record not found" {
 		logrus.Error("ticket_handler: Reserve failed when use repository.FindFlight, error:", err)
 		return ctx.JSON(http.StatusInternalServerError, "Internal server error")
 	}

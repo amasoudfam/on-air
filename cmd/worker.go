@@ -11,6 +11,7 @@ import (
 	"on-air/server/services"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
@@ -28,7 +29,6 @@ var workerCmd = &cobra.Command{
 
 	Run: func(cmd *cobra.Command, args []string) {
 		SetupWorker(configFlag)
-		fmt.Println("worker called")
 	},
 }
 
@@ -45,16 +45,24 @@ func SetupWorker(configPath string) {
 		return
 	}
 
-	go Run(cfg, context.Background(), db)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGTERM)
-	s := <-quit
-	log.Infof("Worker: os signal recieved: %s", s)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go Run(cfg, ctx, db, &wg)
+
+	waitForShutdownSignal()
+	cancel() // Signal the worker to stop
+
+	wg.Wait() // Wait for the worker to finish processing
+
+	log.Info("Worker has stopped")
 }
 
-func Run(cfg *config.Config, ctx context.Context, db *gorm.DB) {
-	var apiMock = &services.APIMockClient{
+func Run(cfg *config.Config, ctx context.Context, db *gorm.DB, wg *sync.WaitGroup) {
+	defer wg.Done()
+	apiMock := &services.APIMockClient{
 		Client:  &http.Client{},
 		Breaker: &breaker.Breaker{},
 		BaseURL: cfg.Services.ApiMock.BaseURL,
@@ -64,56 +72,68 @@ func Run(cfg *config.Config, ctx context.Context, db *gorm.DB) {
 	ticker := time.NewTicker(cfg.Worker.Interval)
 	counter := 0
 	for {
-		var tickets, _ = repository.GetExpiredTickets(db)
+		select {
+		case <-ticker.C:
+			var tickets, err = repository.GetExpiredTickets(db)
+			if err != nil {
+				log.Errorf("worker: Failed to get expired tickets: %v", err)
+				continue
+			}
 
-		for _, ticket := range tickets {
-			err := db.Transaction(func(tx *gorm.DB) error {
-
-				var flight, err = repository.FindFlightById(tx, int(ticket.FlightID))
+			for _, ticket := range tickets {
+				err := processTicket(db, apiMock, ticket)
 				if err != nil {
-					return err
+					log.Errorf("worker: Failed to process ticket: %v", err)
 				}
+			}
 
-				refundResult, err := apiMock.Refund(flight.Number, ticket.Count)
-
-				if refundResult == true {
-					err = repository.ChangeTicketStatus(tx, ticket.ID, string(models.TicketExpired))
-
-					if err != nil {
-						log.Fatal(err)
-					}
-
-					err = repository.ChangePaymentStatus(tx, ticket.ID, string(models.PaymentExpired))
-
-					if err != nil {
-						log.Fatal(err)
-					}
-				} else {
-					return err
+			if cfg.Worker.Iteration > 0 {
+				counter++
+				if counter >= cfg.Worker.Iteration {
+					return
 				}
+			}
 
-				return nil
-			})
+		case <-ctx.Done():
+			log.Info("worker: Done signal received")
+			return
+		}
+	}
+}
 
-			log.Fatal(err)
+func processTicket(db *gorm.DB, apiMock *services.APIMockClient, ticket models.Ticket) error {
+	err := db.Transaction(func(tx *gorm.DB) error {
+		flight, err := repository.FindFlightById(tx, int(ticket.FlightID))
+		if err != nil {
+			return fmt.Errorf("worker: failed to find flight: %w", err)
 		}
 
-		if cfg.Worker.Iteration > 0 {
-			counter++
-			if counter >= cfg.Worker.Iteration {
-				break
+		refundResult, err := apiMock.Refund(flight.Number, ticket.Count)
+		if err != nil {
+			return fmt.Errorf("worker: failed to refund ticket: %w", err)
+		}
+
+		if refundResult {
+			err = repository.ChangeTicketStatus(tx, ticket.ID, string(models.TicketExpired))
+			if err != nil {
+				return fmt.Errorf("worker: failed to change ticket status: %w", err)
+			}
+
+			err = repository.ChangePaymentStatus(tx, ticket.ID, string(models.PaymentExpired))
+			if err != nil {
+				return fmt.Errorf("worker: failed to change payment status: %w", err)
 			}
 		}
 
-		select {
-		case <-ticker.C:
-			continue
-		case <-ctx.Done():
-			log.Info("done signal recieved")
-			break
-		}
+		return nil
+	})
 
-	}
+	return err
+}
 
-	log.Info("workwer finished succesfully")
+func waitForShutdownSignal() {
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGTERM)
+	<-quit
+	log.Info("worker: Received termination signal")
 }

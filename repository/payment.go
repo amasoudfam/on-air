@@ -34,7 +34,6 @@ func PayTicket(db *gorm.DB, ipg *config.IPG, ticketID uint) (string, error) {
 	}
 
 	pasargadApi := pasargadApi(ipg)
-
 	request := pasargad.CreatePaymentRequest{
 		Amount:        int64(payment.Amount),
 		InvoiceNumber: strconv.Itoa(int(payment.ID)),

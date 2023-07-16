@@ -76,7 +76,7 @@ func (m *PasargadPaymentAPI) makeRequest(url, method string, body interface{}, r
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Sign", m.sign)
+	req.Header.Set("Sign", "NoCheckSign")
 
 	r, err := m.httpClient.Do(req)
 

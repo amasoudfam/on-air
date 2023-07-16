@@ -20,12 +20,12 @@ gatepay:
   terminal_id: 134754358
   redirect_url: "http://example.com/payment/callBack"
   cert_file: "server/services/pasargad/certFile.xml"
-  worker:
-    enabled: true
-    interval: 10000000
-    iteration: 3
-    concurency: 2
-    limit: 3
+worker:
+  enabled: true
+  interval: 10000000
+  iteration: 3
+  concurency: 2
+  limit: 3
 services:
   flights: 
     url: "http://example.com"

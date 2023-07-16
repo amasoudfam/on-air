@@ -82,7 +82,7 @@ func SetupServer(cfg *config.Config, db *gorm.DB, redis *redis.Client, port stri
 	}
 
 	e.POST("/payments/pay", payment.Pay, authMiddleware.AuthMiddleware)
-	e.POST("/payments/callBack", payment.CallBack, authMiddleware.AuthMiddleware)
+	e.GET("/payments/callBack", payment.CallBack)
 
 	flight := &handlers.Flight{
 		Redis: redis,

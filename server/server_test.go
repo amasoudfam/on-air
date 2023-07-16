@@ -43,7 +43,7 @@ func (suite *IntegrationTestSuite) SetupSuite() {
 		Host:     "localhost",
 		Port:     5432,
 		Username: "postgres",
-		Password: "postgres",
+		Password: "ehsan",
 		DB:       "fake_db",
 	}
 

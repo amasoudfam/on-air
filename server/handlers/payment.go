@@ -67,7 +67,6 @@ func (t *Payment) CallBack(ctx echo.Context) error {
 	}
 
 	status, err := repository.VerifyPayment(t.DB, t.IPG, req.PaymentID, req.PaymentDate, req.TransactionReferenceID)
-
 	if err != nil {
 		logrus.Error("payment_handler: CallBack failed when use repository.VerifyPayment, error:", err)
 		return ctx.JSON(http.StatusInternalServerError, "Internal server error")
